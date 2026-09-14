@@ -43,7 +43,9 @@ The following sequence uses Auth0 as an example external identity provider:
 
 ## User experience
 
-Connected authentication gives the user one account-linking experience before they move from the agent to the tab:
+Consider a user who signs in to an agent and then opens the app's tab. Connected authentication presents a clear, one-time option to link their Microsoft account. After linking, the active Teams session gives the user seamless access to the tab, including on another device where the original external-provider session isn't available. The user can also skip linking and continue with the agent.
+
+The user completes the connected authentication flow as follows:
 
 1. The user installs the app and opens the agent chat.
 1. The agent asks the user to sign in with the app's external identity provider.
@@ -53,13 +55,6 @@ Connected authentication gives the user one account-linking experience before th
 1. Teams closes the dialog after linking succeeds. The user can open the tab without signing in again.
 
 If the user skips account linking, the agent remains signed in, but the tab must use its existing sign-in flow. If consent, Conditional Access, or reauthentication is required later, the app displays the Microsoft identity prompt instead of treating the user as signed out.
-
-This experience provides:
-
-* **One-time setup**: The user signs in to the agent and links the Microsoft account once.
-* **Seamless tab access**: The linked Microsoft identity allows the tab to authenticate through the active Teams session.
-* **Cross-device access**: The user can authenticate through an active Teams session even when the original external-provider session isn't available on the device.
-* **Clear consent**: The account-linking page explains the action and allows the user to continue or skip it.
 
 ## Developer experience
 
