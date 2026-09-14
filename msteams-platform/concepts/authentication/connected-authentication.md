@@ -48,18 +48,6 @@ The user completes the connected authentication flow as follows:
 
 If the user skips account linking, the agent remains signed in, but the tab must use its existing sign-in flow. If consent, Conditional Access, or reauthentication is required later, the app displays the Microsoft identity prompt instead of treating the user as signed out.
 
-## Developer experience
-
-You implement one coordinated authentication flow instead of independent onboarding flows for the agent and tab. Your app must:
-
-1. Configure the external OAuth connection used by the Teams SDK agent.
-1. Configure NAA in Microsoft Entra ID and the App manifest for the tab.
-1. Host an account-linking page that explains the flow, requests consent, and handles success, cancellation, and failure.
-1. Return the account-linking URL after the agent verifies the external sign-in.
-1. Correlate the agent sign-in, NAA token, PKCE transaction, and linking request without exposing tokens in URLs.
-1. Verify both identities and link them in the external identity provider.
-1. Use the linked Microsoft identity for subsequent tab authentication.
-
 ## Prerequisites
 
 Before you implement connected authentication, you need:
@@ -76,7 +64,7 @@ For information about registering the trusted broker redirect and acquiring NAA 
 
 ## Implement connected authentication
 
-Implement connected authentication by configuring the App manifest and Teams SDK authentication, returning the account-linking URL, acquiring the Microsoft identity, and linking the verified accounts.
+You implement one coordinated authentication flow instead of separate onboarding flows for the agent and tab. First, configure NAA in Microsoft Entra ID and the App manifest for the tab, and configure the external OAuth connection used by the Teams SDK agent. After the agent verifies the external sign-in, return an app-hosted account-linking URL that explains the flow, requests consent, and handles success, cancellation, and failure. The account-linking page then acquires the Microsoft identity with NAA. Your backend correlates the agent sign-in, NAA token, PKCE transaction, and linking request without exposing tokens in URLs, verifies both identities, and links them in the external identity provider. The tab can then use the linked Microsoft identity for subsequent authentication.
 
 ### Configure the app manifest
 
