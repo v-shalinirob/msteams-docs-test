@@ -22,24 +22,16 @@ Use this flow for a Teams app that has:
 
 ## How connected authentication works
 
-The following sequence uses Auth0 as an example external identity provider:
+The following flow uses Auth0 as an example external identity provider:
 
-1. The user signs in to the agent through an Auth0 OAuth connection.
-1. Teams sends a `signin/verifyState` activity to the agent.
-1. The agent verifies the sign-in state and returns an app-hosted account-linking URL.
-1. Teams opens the account-linking page in a dialog.
-1. The account-linking page uses NAA to get a Microsoft Entra access token for the signed-in Teams user.
-1. The page uses an authorization code with Proof Key for Code Exchange (PKCE) to authenticate the Microsoft identity with Auth0.
-1. The app backend verifies both identities and links the Microsoft identity to the primary Auth0 account.
-1. The tab uses the linked Microsoft identity for silent authentication and token renewal.
+1. The Teams SDK agent starts the external OAuth flow, and the user signs in through Auth0.
+1. Teams sends a `signin/verifyState` activity to the agent. The agent verifies the sign-in state, creates a short-lived session that identifies the user and conversation, and returns the app-hosted account-linking URL.
+1. Teams opens the account-linking page in a dialog. The page explains the linking request and uses nested app authentication (NAA) to acquire a Microsoft Entra access token for the signed-in Teams user.
+1. The account-linking page completes an Authorization Code flow with Proof Key for Code Exchange (PKCE) to authenticate the Microsoft identity with Auth0.
+1. The app backend correlates the linking session, validates the tokens and callback, exchanges the one-time authorization code, and links the verified Microsoft identity to the user's primary Auth0 account.
+1. After account linking succeeds, the tab uses NAA and the linked Microsoft identity for silent authentication and token renewal.
 
-| Component | Responsibility |
-| --- | --- |
-| Teams SDK agent | Starts the external OAuth flow, verifies the sign-in state, creates a short-lived linking session, and returns the account-linking URL. |
-| Account-linking page | Gets user consent, acquires the NAA token, completes the PKCE flow, and submits the verified secondary identity. |
-| App backend | Correlates a linking attempt, validates tokens and callbacks, exchanges one-time codes, and links the accounts. |
-| External identity provider | Authenticates the primary identity and maintains the linked identity record. |
-| Microsoft Entra ID and NAA | Authenticate the Teams user and provide a token for the requested scopes. |
+Connected authentication links identity records; it doesn't combine or expose access tokens across the agent and tab. Continue to use each token only for its intended resource and audience.
 
 ## User experience
 
