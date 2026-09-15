@@ -369,6 +369,21 @@ Test at least the following scenarios:
 | Concurrent linking attempts | Each attempt remains bound to the correct user, conversation, and one-time correlation value. |
 | Revoked consent or Conditional Access | The app requests interaction and handles denial without exposing tokens. |
 
+## Error codes
+
+Connected authentication doesn't define a standardized set of error codes. The following status and error codes are application-defined responses used in the sample or responses returned by Auth0:
+
+| Status code | Error code | Description | Developer action |
+| --- | --- | --- | --- |
+| HTTP `400` | Invalid token or request | The token submission, authorization request, authorization code, or account-linking request is invalid. | Validate required request values and reject malformed input. If the authorization code or linking session expired, discard it and ask the user to start sign-in again. |
+| HTTP `404` | Missing sign-in state | The `signin/verifyState` activity doesn't contain the state value required to complete external sign-in. | Confirm that the agent starts sign-in through its configured OAuth connection and that the activity includes `value.state`. Ask the user to restart sign-in instead of continuing without state. |
+| HTTP `410` | Expired linking session | The account-linking session expired or no longer exists. | Delete any temporary tokens and authorization codes associated with the session, then ask the user to restart sign-in from the agent. |
+| HTTP `412` | Sign-in state verification failed | Teams SDK couldn't exchange the sign-in state for the external-provider token. | Verify the OAuth connection name and provider configuration. Treat the state as expired or invalid and ask the user to start a new sign-in attempt. |
+| HTTP `500` | Account linking failed | An unexpected error prevented the backend from linking the accounts. | Log a correlation identifier without logging tokens, return a generic failure message, and investigate identity validation, storage, and provider communication before retrying. |
+| HTTP `502` | Identity provider rejected request | Auth0 returned an unsuccessful response to the account-linking request. | Inspect the upstream status, verify the Auth0 endpoint and request, and retry only if the provider failure is transient. Don't return provider tokens or sensitive response details to the client. |
+| HTTP `503` | Account linking not configured | The backend doesn't have the Auth0 account-linking configuration required to process the request. | Configure the Auth0 domain, OAuth connection, credentials, and account-linking permissions before enabling the flow. |
+| HTTP `401` or `403` | Auth0 authorization failed | The primary Auth0 token has the wrong audience or lacks permission to link identities. | Configure the OAuth connection to request the Auth0 Management API audience and the `update:current_user_identities` scope, then have the user sign in again to obtain a new token. |
+
 ## Troubleshoot connected authentication
 
 | Problem | Resolution |
@@ -378,7 +393,6 @@ Test at least the following scenarios:
 | NAA doesn't use a prefetched token | Ensure that the client ID, broker redirect, scopes, and optional claims exactly match the runtime request. |
 | The external provider rejects the callback | Register the exact HTTPS account-linking callback and its origin in the provider's application settings. |
 | Authorization fails after leaving the Teams webview | Don't depend on third-party cookies for correlation. Use an integrity-protected, single-use correlation value. |
-| Account linking returns `401` or `403` | Verify that the primary external-provider token has the audience and account-linking permissions required by the provider. |
 | The tab prompts again after successful linking | Verify that the secondary Microsoft identity is linked to the primary external account and that the tab uses the NAA connection. |
 
 ## Next step
