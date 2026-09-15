@@ -22,7 +22,7 @@ Use this flow for a Teams app that has:
 
 ## User experience
 
-Consider a user who accesses a multi-capability Teams app that includes an agent or bot and a tab. The user signs in to the agent or bot with the app's external identity provider and receives a one-time option to link that account to their Microsoft account. The following flow uses Auth0 as an example external identity provider:
+Consider a user who accesses a multi-capability Teams app that includes an agent or bot and a tab. The user signs in to the agent or bot with the app's external identity provider and receives a one-time option to link that account to their Microsoft account. If the user skips account linking, the agent or bot remains signed in, while the tab uses its existing sign-in flow. The following flow uses Auth0 as an example external identity provider:
 
 1. The user opens the agent chat, and the Teams SDK agent starts the external OAuth flow for the user to sign in through Auth0.
 1. After sign-in succeeds, Teams sends a `signin/verifyState` activity to the agent. The agent verifies the sign-in state, creates a short-lived session that identifies the user and conversation, and returns the app-hosted account-linking URL.
@@ -31,7 +31,7 @@ Consider a user who accesses a multi-capability Teams app that includes an agent
 1. The page completes an Authorization Code flow with Proof Key for Code Exchange (PKCE). The app backend correlates the linking session, validates the tokens and callback, exchanges the one-time authorization code, and links the verified Microsoft identity to the user's primary Auth0 account.
 1. After linking succeeds, Teams closes the dialog. The tab uses NAA and the linked Microsoft identity for silent authentication and token renewal.
 
-If the user skips account linking, the agent remains signed in, but the tab must use its existing sign-in flow. If consent, Conditional Access, or reauthentication is required later, the app displays the Microsoft identity prompt instead of treating the user as signed out.
+If consent, Conditional Access, or reauthentication is required later, the app displays the Microsoft identity prompt instead of treating the user as signed out.
 
 Connected authentication links identity records; it doesn't combine or expose access tokens across the agent and tab. Continue to use each token only for its intended resource and audience.
 
