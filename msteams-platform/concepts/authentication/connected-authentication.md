@@ -22,27 +22,15 @@ Use this flow for a Teams app that has:
 
 ## User experience
 
-Consider a user who accesses a multi-capability Teams app that includes an agent or bot and a tab. The user signs in to the agent or bot with the app's external identity provider and receives a one-time option to link that account to their Microsoft account. If the user skips account linking, the agent or bot remains signed in, while the tab uses its existing sign-in flow. The following flow uses Auth0 as an example external identity provider:
+Connected authentication provides a coordinated sign-in experience across an agent or bot and its associated tab. Users authenticate the agent or bot with an external identity provider and can choose to link that account to their Microsoft identity for seamless tab access. The following flow uses Auth0 as an example external identity provider:
 
-1. The user opens the agent chat, and the Teams SDK agent starts the external OAuth flow for the user to sign in through Auth0.
-1. After sign-in succeeds, Teams sends a `signin/verifyState` activity to the agent. The agent verifies the sign-in state, creates a short-lived session that identifies the user and conversation, and returns the app-hosted account-linking URL.
-1. Teams opens the account-linking page in a dialog. The page explains that linking the accounts allows the associated tab to sign in without another prompt.
-1. If the user continues, the page uses nested app authentication (NAA) to acquire a Microsoft Entra access token for the signed-in Teams user and request any required permissions.
-1. The page completes an Authorization Code flow with Proof Key for Code Exchange (PKCE). The app backend correlates the linking session, validates the tokens and callback, exchanges the one-time authorization code, and links the verified Microsoft identity to the user's primary Auth0 account.
-1. After linking succeeds, Teams closes the dialog. The tab uses NAA and the linked Microsoft identity for silent authentication and token renewal.
-
-If consent, Conditional Access, or reauthentication is required later, the app displays the Microsoft identity prompt instead of treating the user as signed out.
-
-The user's linking state determines the authentication experience at run time:
-
-| State | Runtime behavior |
-| --- | --- |
-| Agent isn't signed in | The Teams SDK agent starts the external OAuth flow by calling `signin()`. |
-| Agent is signed in, but accounts aren't linked | The agent returns the account-linking URL after `signin.verify-state`. Teams opens the app-hosted page so the user can continue or skip linking. |
-| Account linking is in progress | The page acquires the Microsoft Entra token with NAA, completes the external provider's PKCE flow, and asks the backend to link both verified identities. |
-| Accounts are linked | The tab starts NAA token acquisition. MSAL first calls `acquireTokenSilent`, and the external identity provider resolves the Microsoft identity to the linked primary app account. |
-| User interaction is required | MSAL calls `acquireTokenPopup` for consent, Conditional Access, or reauthentication. |
-| Linking was skipped or revoked | The agent remains independently authenticated. The tab uses its existing sign-in flow or the app restarts account linking from the agent. |
+1. When the agent isn't signed in, the Teams SDK agent calls `signin()` and the user authenticates through Auth0.
+1. After sign-in succeeds, Teams sends a `signin/verifyState` activity. The agent verifies the state, creates a short-lived session for the user and conversation, and returns an app-hosted account-linking URL.
+1. Teams opens the account-linking page in a dialog that explains how linking enables authentication in the associated tab.
+1. If the user continues, the page uses nested app authentication (NAA) to acquire a Microsoft Entra access token and request any required permissions. It then completes an Authorization Code flow with Proof Key for Code Exchange (PKCE), and the backend validates and links both identities.
+1. After linking succeeds, Teams closes the dialog. When the user opens the tab, MSAL calls `acquireTokenSilent`, and Auth0 resolves the Microsoft identity to the linked primary app account.
+1. If consent, Conditional Access, or reauthentication is required, MSAL calls `acquireTokenPopup` and displays the Microsoft identity prompt.
+1. If the user skips linking or later revokes it, the agent or bot remains independently authenticated, while the tab uses its existing sign-in flow or the app restarts account linking from the agent.
 
 Connected authentication links identity records; it doesn't combine or expose access tokens across the agent and tab. Continue to use each token only for its intended resource and audience.
 
