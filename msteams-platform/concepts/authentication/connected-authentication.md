@@ -34,7 +34,11 @@ Connected authentication provides a coordinated sign-in experience across an age
 
 Connected authentication links identity records; it doesn't combine or expose access tokens across the agent and tab. Continue to use each token only for its intended resource and audience.
 
-## Prerequisites
+## Implement connected authentication
+
+Coordinate the App manifest, Teams SDK agent sign-in, NAA token acquisition, and backend identity linking so the tab can authenticate the linked user.
+
+### Prerequisites
 
 Before you implement connected authentication, you need:
 
@@ -47,10 +51,6 @@ Before you implement connected authentication, you need:
 * An account-linking URL, such as `https://app.contoso.com/authTab`.
 
 For information about registering the trusted broker redirect and acquiring NAA tokens, see [Nested app authentication](nested-authentication.md).
-
-## Implement connected authentication
-
-Coordinate the App manifest, Teams SDK agent sign-in, NAA token acquisition, and backend identity linking so the tab can authenticate the linked user.
 
 ### Configure the app manifest
 
