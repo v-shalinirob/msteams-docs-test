@@ -332,7 +332,7 @@ The following table shows the minimum app-hosted endpoints used by the sample:
 | `POST /api/token` | Exchanges the one-time code for the NAA access token used by the external provider's custom connection. |
 | `POST /api/linkAccounts` | Verifies the primary and secondary identities and links them in the identity provider. |
 
-## Test connected authentication
+### Test connected authentication
 
 Test at least the following scenarios:
 
@@ -347,22 +347,7 @@ Test at least the following scenarios:
 | Concurrent linking attempts | Each attempt remains bound to the correct user, conversation, and one-time correlation value. |
 | Revoked consent or Conditional Access | The app requests interaction and handles denial without exposing tokens. |
 
-## Error codes
-
-Connected authentication doesn't define a standardized set of error codes. The following status and error codes are application-defined responses used in the sample or responses returned by Auth0:
-
-| Status code | Error code | Description | Developer action |
-| --- | --- | --- | --- |
-| HTTP `400` | Invalid token or request | The token submission, authorization request, authorization code, or account-linking request is invalid. | Validate required request values and reject malformed input. If the authorization code or linking session expired, discard it and ask the user to start sign-in again. |
-| HTTP `404` | Missing sign-in state | The `signin/verifyState` activity doesn't contain the state value required to complete external sign-in. | Confirm that the agent starts sign-in through its configured OAuth connection and that the activity includes `value.state`. Ask the user to restart sign-in instead of continuing without state. |
-| HTTP `410` | Expired linking session | The account-linking session expired or no longer exists. | Delete any temporary tokens and authorization codes associated with the session, then ask the user to restart sign-in from the agent. |
-| HTTP `412` | Sign-in state verification failed | Teams SDK couldn't exchange the sign-in state for the external-provider token. | Verify the OAuth connection name and provider configuration. Treat the state as expired or invalid and ask the user to start a new sign-in attempt. |
-| HTTP `500` | Account linking failed | An unexpected error prevented the backend from linking the accounts. | Log a correlation identifier without logging tokens, return a generic failure message, and investigate identity validation, storage, and provider communication before retrying. |
-| HTTP `502` | Identity provider rejected request | Auth0 returned an unsuccessful response to the account-linking request. | Inspect the upstream status, verify the Auth0 endpoint and request, and retry only if the provider failure is transient. Don't return provider tokens or sensitive response details to the client. |
-| HTTP `503` | Account linking not configured | The backend doesn't have the Auth0 account-linking configuration required to process the request. | Configure the Auth0 domain, OAuth connection, credentials, and account-linking permissions before enabling the flow. |
-| HTTP `401` or `403` | Auth0 authorization failed | The primary Auth0 token has the wrong audience or lacks permission to link identities. | Configure the OAuth connection to request the Auth0 Management API audience and the `update:current_user_identities` scope, then have the user sign in again to obtain a new token. |
-
-## Troubleshoot connected authentication
+### Troubleshoot connected authentication
 
 | Problem | Resolution |
 | --- | --- |
@@ -390,6 +375,21 @@ Follow these guidelines when you design and deploy connected authentication:
 
 > [!CAUTION]
 > The sample implementation used for the code snippets stores linking data in memory and includes a single-pending-session fallback for local testing. Don't use either approach in a concurrent or multi-user deployment.
+
+## Error codes
+
+Connected authentication doesn't define a standardized set of error codes. The following status and error codes are application-defined responses used in the sample or responses returned by Auth0:
+
+| Status code | Error code | Description | Developer action |
+| --- | --- | --- | --- |
+| HTTP `400` | Invalid token or request | The token submission, authorization request, authorization code, or account-linking request is invalid. | Validate required request values and reject malformed input. If the authorization code or linking session expired, discard it and ask the user to start sign-in again. |
+| HTTP `404` | Missing sign-in state | The `signin/verifyState` activity doesn't contain the state value required to complete external sign-in. | Confirm that the agent starts sign-in through its configured OAuth connection and that the activity includes `value.state`. Ask the user to restart sign-in instead of continuing without state. |
+| HTTP `410` | Expired linking session | The account-linking session expired or no longer exists. | Delete any temporary tokens and authorization codes associated with the session, then ask the user to restart sign-in from the agent. |
+| HTTP `412` | Sign-in state verification failed | Teams SDK couldn't exchange the sign-in state for the external-provider token. | Verify the OAuth connection name and provider configuration. Treat the state as expired or invalid and ask the user to start a new sign-in attempt. |
+| HTTP `500` | Account linking failed | An unexpected error prevented the backend from linking the accounts. | Log a correlation identifier without logging tokens, return a generic failure message, and investigate identity validation, storage, and provider communication before retrying. |
+| HTTP `502` | Identity provider rejected request | Auth0 returned an unsuccessful response to the account-linking request. | Inspect the upstream status, verify the Auth0 endpoint and request, and retry only if the provider failure is transient. Don't return provider tokens or sensitive response details to the client. |
+| HTTP `503` | Account linking not configured | The backend doesn't have the Auth0 account-linking configuration required to process the request. | Configure the Auth0 domain, OAuth connection, credentials, and account-linking permissions before enabling the flow. |
+| HTTP `401` or `403` | Auth0 authorization failed | The primary Auth0 token has the wrong audience or lacks permission to link identities. | Configure the OAuth connection to request the Auth0 Management API audience and the `update:current_user_identities` scope, then have the user sign in again to obtain a new token. |
 
 ## Code sample
 
