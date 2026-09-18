@@ -3,7 +3,7 @@ title: Connect agent and tab authentication
 description: Learn how to link an agent's external identity to a Microsoft identity so users can access an associated tab without signing in again.
 ms.topic: how-to
 ms.localizationpriority: medium
-ms.date: 09/15/2026
+ms.date: 09/18/2026
 ---
 
 # Connect agent and tab authentication
@@ -180,6 +180,13 @@ app.on('signin.verify-state', async (context) => {
 });
 ```
 
+* `state`: Supplies the one-time sign-in verification code. Use `context.activity.value.state` so Teams SDK can exchange the completed OAuth sign-in for the external-provider token.
+* `context.api.users.getToken`: Verifies the completed external-provider sign-in. Set `channelId` and `userId` from the activity, use the configured `connectionName`, and pass `state` as `code`.
+* `createLinkingSession`: Correlates linking with the verified user. Pass the activity's channel and user IDs, and persist a random, short-lived, single-use session ID for the remaining linking operations.
+* `ACCOUNT_LINKING_URL`: Identifies the app-hosted linking experience. Set it to an HTTPS URL whose host is included in `validDomains`, such as `https://app.contoso.com/authTab`.
+* `session`: Binds the linking page to the request. Add the generated session ID as a query parameter without placing access tokens or identity tokens in the URL.
+* `channelData.accountLinkingUrl`: Opens the connected-authentication dialog in Teams. Set it to the session-specific account-linking URL returned in the successful invoke response.
+
 > [!NOTE]
 > The Teams SDK TypeScript definitions currently declare the `signin/verifyState` response body as `void`. The example assigns the connected-authentication response payload after creating a typed invoke response.
 
@@ -208,7 +215,16 @@ const { accessToken } = await client
   .catch(() => client.acquireTokenPopup(request));
 ```
 
-The app manifest values and runtime values for the client ID, redirect URI, and scopes must match.
+* `teamsApp.initialize()`: Initializes the page in the Teams host. Call it before creating the MSAL client so NAA can use the host authentication broker.
+* `clientId`: Identifies the NAA Microsoft Entra application. Set `naaClientId` to the same application client ID as `webApplicationInfo.id` in the App manifest.
+* `authority`: Selects the Microsoft Entra tenant for authentication. Replace `naaTenantId` with the tenant ID supported by the app's account configuration.
+* `redirectUri`: Returns control through the trusted NAA broker. Set it to the same `brk-multihub://<app-host-name>` URI declared in `nestedAppAuthInfo`.
+* `supportsNestedAppAuth`: Enables brokered authentication in Microsoft 365 hosts. Set it to `true` when creating the nestable public client application.
+* `request.scopes`: Requests permissions for the Microsoft identity. Use the minimum scopes declared in `nestedAppAuthInfo`, such as `User.Read`.
+* `acquireTokenSilent`: Attempts authentication without prompting the user. Call it first to reuse the active Microsoft session and cached consent.
+* `acquireTokenPopup`: Handles authentication that requires user interaction. Use it when silent acquisition can't satisfy consent, Conditional Access, or reauthentication.
+
+The App manifest and runtime values for the client ID, redirect URI, and scopes must match.
 
 ### Complete account linking
 
