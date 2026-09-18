@@ -8,7 +8,7 @@ ms.date: 09/18/2026
 
 # Connect agent and tab authentication
 
-Connected authentication combines sign-in and authentication flow for a Teams agent or bot that includes a tab app into one seamless experience.
+Connected authentication combines sign-in and authentication flow for a **Teams app that includes an agent or bot and a tab**, with one coordinated authentication experience.
 
 > [!IMPORTANT]
 > Connected authentication is a one-way flow from the agent or bot to the tab. Signing in to the agent can authenticate the associated tab after account linking. Signing in to the tab doesn't sign the user in to the agent.
