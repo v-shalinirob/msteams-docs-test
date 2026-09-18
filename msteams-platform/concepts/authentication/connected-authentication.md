@@ -15,7 +15,7 @@ Connected authentication combines sign-in and authentication flow for a **Teams 
 
 ## User experience
 
-Connected authentication streamlines agent or bot and tab authentiation flow using account linking. Users sign in to the conversational capability first and can then link that account to their Microsoft identity. After linking, the hosted experience can authenticate the user through their active Microsoft session, reducing repeated prompts across app capabilities.
+Connected authentication streamlines the authentication flows for an agent or bot and an associated tab through account linking. Users sign in to the conversational capability first and can then link that account to their Microsoft identity. After linking, the hosted experience can authenticate the user through their active Microsoft session, reducing repeated prompts across app capabilities.
 
 The connected authentication experience works as follows:
 
@@ -25,7 +25,7 @@ The connected authentication experience works as follows:
 1. After sign-in succeeds, Teams sends a `signin/verifyState` activity. The agent verifies the state, creates a short-lived session for the user and conversation, and returns an app-hosted account-linking URL.
 1. Teams opens the account-linking page in a dialog that explains how linking enables authentication in the associated tab.
 1. If the user continues, the page uses nested app authentication (NAA) to acquire a Microsoft Entra access token and request any required permissions. It then completes an Authorization Code flow with Proof Key for Code Exchange (PKCE), and the backend validates and links both identities.
-1. After linking succeeds, Teams closes the dialog. When the user opens the tab, MSAL requests a token silently, and the external identity provider resolves the Microsoft identity to the linked app account.
+1. After linking succeeds, Teams closes the dialog. When the user opens the tab, MSAL requests a token silently, and the app uses the verified Microsoft identity and stored account-link relationship to authenticate the tab.
 1. If consent, Conditional Access, or reauthentication is required, MSAL calls `acquireTokenPopup` and displays the Microsoft identity prompt.
 1. If the user skips linking or later revokes it, the agent or bot remains independently authenticated, while the tab uses its existing sign-in flow or the app restarts account linking from the agent.
 
