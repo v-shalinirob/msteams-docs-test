@@ -8,21 +8,16 @@ ms.date: 09/15/2026
 
 # Connect agent and tab authentication
 
-Connected authentication links the external identity that a user selects when signing in to an agent or bot with the user's Microsoft identity in Teams. After the accounts are linked, your tab can use nested app authentication (NAA) to sign in the user without another interactive prompt.
-
-Use this flow for a Teams app that has:
-
-* A conversational agent or bot built with Teams SDK.
-* A tab or other app-hosted web experience.
-* An external identity provider, such as Auth0.
-* A backend that can securely link two verified identities.
+Connected authentication provides a coordinated sign-in experience across an agent or bot and its associated tab. Use this flow for a Teams agent or app that has an agent or bot built with Teams SDK and a tab or other app-hosted web experience.
 
 > [!IMPORTANT]
 > Connected authentication is a one-way flow from the agent or bot to the tab. Signing in to the agent can authenticate the associated tab after account linking. Signing in to the tab doesn't sign the user in to the agent.
 
 ## User experience
 
-Connected authentication provides a coordinated sign-in experience across an agent or bot and its associated tab. Users authenticate the agent or bot with an external identity provider and can choose to link that account to their Microsoft identity for seamless tab access. The following flow uses Auth0 as an example external identity provider:
+Teams starts with the bot chat and completes bot sign-in in a task module. The app then uses NAA to authenticate the user, retrieves the bot token, and links both accounts in the backend. This enables silent sign-in and token refresh, avoids repeated prompts, and keeps users signed in when the bot session expires.
+
+The following flow uses Auth0 as an example external identity provider:
 
 1. When the agent isn't signed in, the Teams SDK agent calls `signin()` and the user authenticates through Auth0.
 1. After sign-in succeeds, Teams sends a `signin/verifyState` activity. The agent verifies the state, creates a short-lived session for the user and conversation, and returns an app-hosted account-linking URL.
