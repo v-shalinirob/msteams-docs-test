@@ -137,35 +137,16 @@ app.event('signin', async ({ send }) => {
 Handle `signin.verify-state` to exchange the state code for the external-provider token. Create a short-lived linking session that binds the Teams channel and user to the account-linking request. Return the session-specific account-linking URL in the invoke response:
 
 ```typescript
-import { randomUUID } from 'node:crypto';
-import { ChannelID, InvokeResponse } from '@microsoft/teams.api';
-
-interface LinkingSession {
-  readonly channelId: ChannelID;
-  readonly expiresAt: number;
-  readonly userId: string;
-}
-
-const linkingSessions = new Map<string, LinkingSession>();
+import { InvokeResponse } from '@microsoft/teams.api';
+ 
 const accountLinkingUrl = process.env.ACCOUNT_LINKING_URL;
-
-function createLinkingSession(channelId: ChannelID, userId: string): string {
-  const sessionId = randomUUID();
-  linkingSessions.set(sessionId, {
-    channelId,
-    userId,
-    expiresAt: Date.now() + 10 * 60 * 1000,
-  });
-  return sessionId;
-}
-
+ 
 app.on('signin.verify-state', async (context) => {
   const state = context.activity.value.state;
-  if (!state) {
-    context.log.warn('The sign-in activity did not include state.');
+  if (!state || !accountLinkingUrl) {
     return { status: 404 };
   }
-
+ 
   try {
     await context.api.users.getToken({
       channelId: context.activity.channelId,
@@ -173,46 +154,31 @@ app.on('signin.verify-state', async (context) => {
       connectionName,
       code: state,
     });
-  } catch (error) {
+  } catch {
     context.log.error('Failed to verify the sign-in state.');
     return { status: 412 };
   }
-
-  if (!accountLinkingUrl) {
-    context.log.warn('ACCOUNT_LINKING_URL is not configured.');
-    return { status: 200 };
-  }
-
-  const sessionId = createLinkingSession(
+ 
+  // Bind the linking request to the verified user and conversation.
+  const sessionId = await createLinkingSession(
     context.activity.channelId,
     context.activity.from.id
   );
   const url = new URL(accountLinkingUrl);
   url.searchParams.set('session', sessionId);
-
+ 
   const response: InvokeResponse<'signin/verifyState'> = { status: 200 };
   Object.assign(response, {
     body: {
       composeExtension: {
         text: url.toString(),
-        channelData: {
-          accountLinkingUrl: url.toString(),
-        },
+        channelData: { accountLinkingUrl: url.toString() },
       },
     },
   });
   return response;
 });
 ```
-
-* `state`: Carries the one-time sign-in verification code. Use `context.activity.value.state` from Teams so Teams SDK can exchange the completed OAuth sign-in.
-* `channelId`: Identifies the conversation channel for token retrieval. Set it to `context.activity.channelId` to bind the linking session to the correct conversation.
-* `userId`: Identifies the user completing connected authentication. Set it to `context.activity.from.id` to bind token retrieval and account linking to one user.
-* `connectionName`: Selects the completed external OAuth connection. Use the same connection configured as `defaultConnectionName` to retrieve the primary external-provider token.
-* `code`: Supplies the state code for token exchange. Set it to the `state` value from the invoke activity to complete the external OAuth sign-in.
-* `ACCOUNT_LINKING_URL`: Locates the app-hosted linking experience. Set an HTTPS URL, such as `https://app.contoso.com/authTab`, to tell Teams which page to open.
-* `session`: Correlates the page with the verified sign-in. Set it to a short-lived, random linking-session ID that connects NAA and PKCE operations to the correct user.
-* `channelData.accountLinkingUrl`: Returns the linking page location to Teams. Set it to the account-linking URL containing the session ID to open the connected authentication dialog.
 
 > [!NOTE]
 > The Teams SDK TypeScript definitions currently declare the `signin/verifyState` response body as `void`. The example assigns the connected-authentication response payload after creating a typed invoke response.
@@ -222,61 +188,25 @@ app.on('signin.verify-state', async (context) => {
 Initialize MSAL for NAA on the account-linking page. Attempt silent token acquisition first and use an interactive prompt only when required:
 
 ```typescript
+import { app as teamsApp } from '@microsoft/teams-js';
 import { createNestablePublicClientApplication } from '@azure/msal-browser';
-
-interface AcquireNaaTokenOptions {
-  readonly clientId: string;
-  readonly redirectUri: string;
-  readonly scopes: readonly string[];
-  readonly tenantId: string;
-}
-
-export async function acquireNaaAccessToken({
-  clientId,
-  redirectUri,
-  scopes,
-  tenantId,
-}: AcquireNaaTokenOptions): Promise<string> {
-  const client = await createNestablePublicClientApplication({
-    auth: {
-      clientId,
-      authority: `https://login.microsoftonline.com/${tenantId}`,
-      supportsNestedAppAuth: true,
-      redirectUri,
-    },
-  });
-
-  const request = { scopes: [...scopes] };
-  const token = await client
-    .acquireTokenSilent(request)
-    .catch(() => client.acquireTokenPopup(request));
-  return token.accessToken;
-}
-```
-
-* `clientId`: Identifies the NAA Microsoft Entra application. Set it to the same client ID as `webApplicationInfo.id` to request the Microsoft identity configured for the Teams app.
-* `authority`: Selects the Microsoft Entra tenant authority. Set it to `https://login.microsoftonline.com/<tenant-id>` to direct authentication to the intended tenant.
-* `supportsNestedAppAuth`: Enables brokered authentication inside Microsoft 365 hosts. Set it to `true` to activate NAA behavior in the MSAL public client.
-* `redirectUri`: Identifies the trusted broker return location. Use the same `brk-multihub://<app-host-name>` URI as the App manifest so Teams can return the NAA result.
-* `scopes`: Specifies Microsoft permissions requested by the page. Use the exact App manifest scopes, such as `User.Read`, to control consent and the NAA token permissions.
-
-Initialize TeamsJS before you initialize MSAL on the account-linking page:
-
-```typescript
-await microsoftTeams.app.initialize();
-
-const naaAccessToken = await acquireNaaAccessToken({
-  clientId: naaClientId,
-  redirectUri: naaRedirectUri,
-  tenantId: naaTenantId,
-  scopes: ['User.Read'],
+ 
+await teamsApp.initialize();
+ 
+const client = await createNestablePublicClientApplication({
+  auth: {
+    clientId: naaClientId,
+    authority: `https://login.microsoftonline.com/${naaTenantId}`,
+    redirectUri: 'brk-multihub://app.contoso.com',
+    supportsNestedAppAuth: true,
+  },
 });
+ 
+const request = { scopes: ['User.Read'] };
+const { accessToken } = await client
+  .acquireTokenSilent(request)
+  .catch(() => client.acquireTokenPopup(request));
 ```
-
-* `naaClientId`: Identifies the Microsoft Entra application registration. Set it to the same client ID used in the App manifest to keep the runtime NAA request aligned.
-* `naaRedirectUri`: Supplies the registered trusted broker redirect. Set it to `brk-multihub://<app-host-name>` to return authentication control to the embedded linking page.
-* `naaTenantId`: Selects the Teams user's Microsoft Entra tenant. Set the tenant ID for the supported account configuration to acquire the identity used for linking.
-* `scopes`: Requests permissions required by the linking flow. Add the minimum permissions declared in the App manifest to produce the NAA token submitted to the backend.
 
 The app manifest values and runtime values for the client ID, redirect URI, and scopes must match.
 
