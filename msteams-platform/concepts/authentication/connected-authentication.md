@@ -21,15 +21,12 @@ The connected authentication experience works as follows:
 
 :::image type="content" source="../../assets/images/authentication/connected-authentication/authentication-flow.png" alt-text="This image shows the authentication flow for connected authentication.":::
 
-1. When the agent or bot isn't signed in, it starts the configured external OAuth flow with Teams SDK.
-1. After sign-in succeeds, Teams sends a `signin/verifyState` activity. The agent verifies the state, creates a short-lived session for the user and conversation, and returns an app-hosted account-linking URL.
-1. Teams opens the account-linking page in a dialog that explains how linking enables authentication in the associated tab.
-1. If the user continues, the page uses nested app authentication (NAA) to acquire a Microsoft Entra access token and request any required permissions. It then completes an Authorization Code flow with Proof Key for Code Exchange (PKCE), and the backend validates and links both identities.
-1. After linking succeeds, Teams closes the dialog. When the user opens the tab, MSAL requests a token silently, and the app uses the verified Microsoft identity and stored account-link relationship to authenticate the tab.
-1. If consent, Conditional Access, or reauthentication is required, MSAL calls `acquireTokenPopup` and displays the Microsoft identity prompt.
+1. The user opens the agent or bot and is prompted to sign in with the app's external identity provider.
+1. After sign-in succeeds, Teams opens an account-linking dialog that explains how linking the user's Microsoft identity enables access to the associated tab.
+1. If the user chooses to link the accounts, they review and accept any required Microsoft identity permissions.
+1. After linking succeeds, Teams closes the dialog. The user can open the associated tab without another sign-in prompt.
+1. If consent, Conditional Access, or reauthentication is required later, the app displays a Microsoft identity prompt.
 1. If the user skips linking or later revokes it, the agent or bot remains independently authenticated, while the tab uses its existing sign-in flow or the app restarts account linking from the agent.
-
-Connected authentication links identity records; it doesn't combine or expose access tokens across the agent and tab. Continue to use each token only for its intended resource and audience.
 
 ## Implement connected authentication
 
