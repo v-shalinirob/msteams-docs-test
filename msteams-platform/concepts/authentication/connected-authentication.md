@@ -19,6 +19,8 @@ Teams starts with the bot chat and completes bot sign-in in a task module. The a
 
 The following flow uses Auth0 as an example external identity provider:
 
+:::image type="content" source="../../assets/images/authentication/connected-authentication/authentication-flow.png" alt-text="This image shows the authentication flow for connected authentication.":::
+
 1. When the agent isn't signed in, the Teams SDK agent calls `signin()` and the user authenticates through Auth0.
 1. After sign-in succeeds, Teams sends a `signin/verifyState` activity. The agent verifies the state, creates a short-lived session for the user and conversation, and returns an app-hosted account-linking URL.
 1. Teams opens the account-linking page in a dialog that explains how linking enables authentication in the associated tab.
