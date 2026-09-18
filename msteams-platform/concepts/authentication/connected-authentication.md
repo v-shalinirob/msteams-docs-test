@@ -1,6 +1,6 @@
 ---
 title: Connect agent and tab authentication
-description: Learn how to link an agent's external identity to a Microsoft identity so users can access an associated tab without signing in again.
+description: Learn how connected authentication links an agent or bot sign-in to a Microsoft identity for seamless access to an associated tab.
 ms.topic: how-to
 ms.localizationpriority: medium
 ms.date: 09/18/2026
@@ -8,24 +8,24 @@ ms.date: 09/18/2026
 
 # Connect agent and tab authentication
 
-Connected authentication provides a coordinated sign-in experience across an agent or bot and its associated tab. Use this flow for a Teams agent or app that has an agent or bot built with Teams SDK and a tab or other app-hosted web experience.
+Connected authentication streamlines sign-in for a Teams app that includes an agent or bot and a tab or other app-hosted experience. It links the external identity used to sign in to the agent or bot with the user's Microsoft identity. After the user links the accounts, the associated tab can use the active Microsoft session for authentication without requiring the user to sign in again.
 
 > [!IMPORTANT]
 > Connected authentication is a one-way flow from the agent or bot to the tab. Signing in to the agent can authenticate the associated tab after account linking. Signing in to the tab doesn't sign the user in to the agent.
 
 ## User experience
 
-Teams starts with the bot chat and completes bot sign-in in a task module. The app then uses NAA to authenticate the user, retrieves the bot token, and links both accounts in the backend. This enables silent sign-in and token refresh, avoids repeated prompts, and keeps users signed in when the bot session expires.
+Connected authentication combines agent or bot sign-in and optional account linking into one experience. Users sign in to the conversational capability first and can then link that account to their Microsoft identity. After linking, the hosted experience can authenticate the user through their active Microsoft session, reducing repeated prompts across app capabilities.
 
-The following flow uses Auth0 as an example external identity provider:
+The connected authentication experience works as follows:
 
 :::image type="content" source="../../assets/images/authentication/connected-authentication/authentication-flow.png" alt-text="This image shows the authentication flow for connected authentication.":::
 
-1. When the agent isn't signed in, the Teams SDK agent calls `signin()` and the user authenticates through Auth0.
+1. When the agent or bot isn't signed in, it starts the configured external OAuth flow with Teams SDK.
 1. After sign-in succeeds, Teams sends a `signin/verifyState` activity. The agent verifies the state, creates a short-lived session for the user and conversation, and returns an app-hosted account-linking URL.
 1. Teams opens the account-linking page in a dialog that explains how linking enables authentication in the associated tab.
 1. If the user continues, the page uses nested app authentication (NAA) to acquire a Microsoft Entra access token and request any required permissions. It then completes an Authorization Code flow with Proof Key for Code Exchange (PKCE), and the backend validates and links both identities.
-1. After linking succeeds, Teams closes the dialog. When the user opens the tab, MSAL calls `acquireTokenSilent`, and Auth0 resolves the Microsoft identity to the linked primary app account.
+1. After linking succeeds, Teams closes the dialog. When the user opens the tab, MSAL requests a token silently, and the external identity provider resolves the Microsoft identity to the linked app account.
 1. If consent, Conditional Access, or reauthentication is required, MSAL calls `acquireTokenPopup` and displays the Microsoft identity prompt.
 1. If the user skips linking or later revokes it, the agent or bot remains independently authenticated, while the tab uses its existing sign-in flow or the app restarts account linking from the agent.
 
@@ -253,7 +253,7 @@ Your account-linking page and backend must complete these operations:
 1. Delete the linking session, temporary token, and authorization code.
 1. Return success to the account-linking page and close the Teams dialog.
 
-The following table shows the minimum app-hosted endpoints used by the sample:
+The following table shows example app-hosted endpoints for completing the connected authentication flow:
 
 | Endpoint | Purpose |
 | --- | --- |
@@ -272,7 +272,7 @@ Test at least the following scenarios:
 | First agent sign-in | The external provider authenticates the user and Teams opens the account-linking page. |
 | Account-linking consent | NAA obtains the requested Microsoft token and the backend links the verified identities. |
 | Tab open after linking | The tab authenticates silently with the linked Microsoft identity. |
-| Different device with an active Teams session | The linked Microsoft identity authenticates the user even when the original social-provider session isn't available. |
+| Different device with an active Teams session | The linked Microsoft identity authenticates the user even when the original external-provider session isn't available. |
 | User skips linking | The agent remains signed in, but the tab can require its existing sign-in flow. |
 | Expired linking session | The backend rejects the request and asks the user to start sign-in again. |
 | Concurrent linking attempts | Each attempt remains bound to the correct user, conversation, and one-time correlation value. |
@@ -309,7 +309,7 @@ Follow these guidelines when you design and deploy connected authentication:
 
 ## Error codes
 
-Connected authentication doesn't define a standardized set of error codes. The following status and error codes are application-defined responses used in the sample or responses returned by Auth0:
+Connected authentication doesn't define a standardized set of error codes. The following status and error codes are application-defined responses used in the sample or responses returned by the configured external identity provider:
 
 | Status code | Error code | Description | Developer action |
 | --- | --- | --- | --- |
@@ -318,9 +318,9 @@ Connected authentication doesn't define a standardized set of error codes. The f
 | HTTP `410` | Expired linking session | The account-linking session expired or no longer exists. | Delete any temporary tokens and authorization codes associated with the session, then ask the user to restart sign-in from the agent. |
 | HTTP `412` | Sign-in state verification failed | Teams SDK couldn't exchange the sign-in state for the external-provider token. | Verify the OAuth connection name and provider configuration. Treat the state as expired or invalid and ask the user to start a new sign-in attempt. |
 | HTTP `500` | Account linking failed | An unexpected error prevented the backend from linking the accounts. | Log a correlation identifier without logging tokens, return a generic failure message, and investigate identity validation, storage, and provider communication before retrying. |
-| HTTP `502` | Identity provider rejected request | Auth0 returned an unsuccessful response to the account-linking request. | Inspect the upstream status, verify the Auth0 endpoint and request, and retry only if the provider failure is transient. Don't return provider tokens or sensitive response details to the client. |
-| HTTP `503` | Account linking not configured | The backend doesn't have the Auth0 account-linking configuration required to process the request. | Configure the Auth0 domain, OAuth connection, credentials, and account-linking permissions before enabling the flow. |
-| HTTP `401` or `403` | Auth0 authorization failed | The primary Auth0 token has the wrong audience or lacks permission to link identities. | Configure the OAuth connection to request the Auth0 Management API audience and the `update:current_user_identities` scope, then have the user sign in again to obtain a new token. |
+| HTTP `502` | Identity provider rejected request | The external identity provider returned an unsuccessful response to the account-linking request. | Inspect the upstream status, verify the provider endpoint and request, and retry only if the failure is transient. Don't return provider tokens or sensitive response details to the client. |
+| HTTP `503` | Account linking not configured | The backend doesn't have the external-provider configuration required to link accounts. | Configure the provider domain, OAuth connection, credentials, and account-linking permissions before enabling the flow. |
+| HTTP `401` or `403` | Identity provider authorization failed | The primary external-provider token has the wrong audience or lacks permission to link identities. | Configure the OAuth connection to request the provider's account-management API audience and identity-linking scopes, then have the user sign in again to obtain a new token. |
 
 ## Code sample
 
