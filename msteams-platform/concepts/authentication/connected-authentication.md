@@ -17,9 +17,11 @@ Connected authentication combines sign-in and authentication flow for a **Teams 
 
 Connected authentication streamlines the authentication flows for an agent or bot and an associated tab through account linking. Users sign in to the conversational capability first and can then link that account to their Microsoft identity. After linking, the hosted experience can authenticate the user through their active Microsoft session, reducing repeated prompts across app capabilities.
 
+[Placeholder: Screenshots of connected auth pop-up.]
+
 ## Connected authentication at runtime
 
-The connected authentication experience works as follows:
+The connected authentication flow works as follows:
 
 :::image type="content" source="../../assets/images/authentication/connected-authentication/authentication-flow.png" alt-text="This image shows the authentication flow for connected authentication.":::
 
