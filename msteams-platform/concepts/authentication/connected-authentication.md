@@ -203,8 +203,10 @@ app.on('signin.verify-state', async (context) => {
 Initialize MSAL for NAA on the account-linking page. Attempt silent token acquisition first and use an interactive prompt only when required:
 
 ```typescript
-import { app as teamsApp } from '@microsoft/teams-js';
-import { createNestablePublicClientApplication } from '@azure/msal-browser';
+import {
+  InteractionRequiredAuthError,
+  createNestablePublicClientApplication,
+} from '@azure/msal-browser';
  
 await teamsApp.initialize();
  
@@ -212,15 +214,21 @@ const client = await createNestablePublicClientApplication({
   auth: {
     clientId: naaClientId,
     authority: `https://login.microsoftonline.com/${naaTenantId}`,
-    redirectUri: 'brk-multihub://app.contoso.com',
+    redirectUri: 'xxx-xxxxx://app.contoso.com',
     supportsNestedAppAuth: true,
   },
 });
  
 const request = { scopes: ['User.Read'] };
-const { accessToken } = await client
-  .acquireTokenSilent(request)
-  .catch(() => client.acquireTokenPopup(request));
+const { accessToken } = await client.acquireTokenSilent(request).catch(
+  (error: unknown) => {
+    if (error instanceof InteractionRequiredAuthError) {
+      return client.acquireTokenPopup(request);
+    }
+ 
+    throw error;
+  }
+);
 ```
 
 - `teamsApp.initialize()`: Initializes the page in the Teams host. Call it before creating the MSAL client so NAA can use the host authentication broker.
