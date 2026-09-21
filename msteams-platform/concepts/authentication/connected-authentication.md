@@ -19,6 +19,13 @@ Connected authentication streamlines the authentication flows for an agent or bo
 
 [Placeholder: Screenshots of connected auth pop-up.]
 
+**Key highlights for users**:
+
+- **Unified user experience**: Users authenticate once and gain access to all app capabilities, reducing confusion and repetitive logins.
+- **Consistent Onboarding**: Connected authentication flow ensures that all users meet minimum setup requirements before accessing app features. Following onboarding, the user experiences increased reliability and lesser support issues.
+- **Persistent Login**: Account linking with Entra Nested app authentication (NAA) ensures that the user stays logged in, even if the primary login method expires.
+- **Seamless Access**: Connected authentication achieves smoother app transactions and interactions as bot and tab capabilities recognize the user through the linked tokens.
+
 ## Connected authentication at runtime
 
 The connected authentication flow works as follows:
@@ -40,13 +47,13 @@ Coordinate the App manifest, Teams SDK agent sign-in, NAA token acquisition, and
 
 Before you implement connected authentication, you need:
 
-* A Teams app with a personal agent or bot and a tab.
-* A Teams SDK TypeScript project using `@microsoft/teams.apps`, `@microsoft/teams.api`, and related Teams SDK packages.
-* An Azure Bot resource with an OAuth connection for your identity provider.
-* A Microsoft Entra app registration configured for NAA.
-* An identity provider that supports account linking and Authorization Code flow with PKCE.
-* A public HTTPS origin that hosts your agent endpoint, account-linking page, and OAuth bridge endpoints.
-* An account-linking URL, such as `https://app.contoso.com/authTab`.
+- A Teams app with a personal agent or bot and a tab.
+- A Teams SDK TypeScript project using `@microsoft/teams.apps`, `@microsoft/teams.api`, and related Teams SDK packages.
+- An Azure Bot resource with an OAuth connection for your identity provider.
+- A Microsoft Entra app registration configured for NAA.
+- An identity provider that supports account linking and Authorization Code flow with PKCE.
+- A public HTTPS origin that hosts your agent endpoint, account-linking page, and OAuth bridge endpoints.
+- An account-linking URL, such as `https://app.contoso.com/authTab`.
 
 For information about registering the trusted broker redirect and acquiring NAA tokens, see [Nested app authentication](nested-authentication.md).
 
@@ -81,12 +88,12 @@ Use App manifest version 1.22 or later to add `nestedAppAuthInfo`. The following
 }
 ```
 
-* `bots[0].botId`: Identifies the agent or bot registration. Set it to the Microsoft Entra application client ID to route Teams activities to the registered agent or bot.
-* `validDomains`: Allows Teams to load the linking page. Add the host name from `ACCOUNT_LINKING_URL`, such as `app.contoso.com`, so the page can open in Teams.
-* `webApplicationInfo.id`: Identifies the app requesting Microsoft tokens. Set it to the same Microsoft Entra application client ID used at runtime to connect the App manifest to the NAA token request.
-* `webApplicationInfo.resource`: Identifies the agent or bot API resource. Set the application ID URI, such as `api://botid-${{ENTRA_APP_ID}}`, to associate the Teams app with its protected API.
-* `nestedAppAuthInfo.redirectUri`: Registers the trusted NAA broker redirect. Set the SPA redirect to `brk-multihub://<app-host-name>` without a path so Microsoft 365 hosts can broker NAA authentication.
-* `nestedAppAuthInfo.scopes`: Declares permissions requested during NAA authentication. Add the exact runtime scopes, such as `User.Read`, to enable token prefetch and Microsoft Entra consent validation.
+- `bots[0].botId`: Identifies the agent or bot registration. Set it to the Microsoft Entra application client ID to route Teams activities to the registered agent or bot.
+- `validDomains`: Allows Teams to load the linking page. Add the host name from `ACCOUNT_LINKING_URL`, such as `app.contoso.com`, so the page can open in Teams.
+- `webApplicationInfo.id`: Identifies the app requesting Microsoft tokens. Set it to the same Microsoft Entra application client ID used at runtime to connect the App manifest to the NAA token request.
+- `webApplicationInfo.resource`: Identifies the agent or bot API resource. Set the application ID URI, such as `api://botid-${{ENTRA_APP_ID}}`, to associate the Teams app with its protected API.
+- `nestedAppAuthInfo.redirectUri`: Registers the trusted NAA broker redirect. Set the SPA redirect to `brk-multihub://<app-host-name>` without a path so Microsoft 365 hosts can broker NAA authentication.
+- `nestedAppAuthInfo.scopes`: Declares permissions requested during NAA authentication. Add the exact runtime scopes, such as `User.Read`, to enable token prefetch and Microsoft Entra consent validation.
 
 ### Configure Teams SDK authentication
 
@@ -107,9 +114,9 @@ const app = new App({
 });
 ```
 
-* `applicationIdUri`: Identifies the protected agent or bot resource. Set it to the app registration URI from `RESOURCE_URI` to associate Teams SDK authentication with the registered API.
-* `httpServerAdapter`: Hosts Teams routes in the web server. Set it to an `ExpressAdapter` instance to receive sign-in activities and serve account-linking endpoints.
-* `oauth.defaultConnectionName`: Selects the agent's  OAuth connection. Set it to the Azure Bot OAuth connection name, such as `Auth0`, that handles the initial sign-in.
+- `applicationIdUri`: Identifies the protected agent or bot resource. Set it to the app registration URI from `RESOURCE_URI` to associate Teams SDK authentication with the registered API.
+- `httpServerAdapter`: Hosts Teams routes in the web server. Set it to an `ExpressAdapter` instance to receive sign-in activities and serve account-linking endpoints.
+- `oauth.defaultConnectionName`: Selects the agent's  OAuth connection. Set it to the Azure Bot OAuth connection name, such as `Auth0`, that handles the initial sign-in.
 
 Start sign-in when the user sends a message and handle the successful sign-in event:
 
@@ -129,9 +136,9 @@ app.event('signin', async ({ send }) => {
 });
 ```
 
-* `isSignedIn`: Indicates whether the agent user authenticated. Use the value supplied by Teams SDK for the current activity to avoid starting another sign-in for an authenticated user.
-* `signin()`: Starts the configured  OAuth sign-in. Call it without a connection name to use the default connection and authenticate the primary account before account linking.
-* `app.event('signin', ...)`: Handles successful  provider authentication. Register a handler for the `signin` event so the agent can continue into connected authentication.
+- `isSignedIn`: Indicates whether the agent user authenticated. Use the value supplied by Teams SDK for the current activity to avoid starting another sign-in for an authenticated user.
+- `signin()`: Starts the configured  OAuth sign-in. Call it without a connection name to use the default connection and authenticate the primary account before account linking.
+- `app.event('signin', ...)`: Handles successful  provider authentication. Register a handler for the `signin` event so the agent can continue into connected authentication.
 
 ### Return the account-linking URL
 
@@ -181,12 +188,12 @@ app.on('signin.verify-state', async (context) => {
 });
 ```
 
-* `state`: Supplies the one-time sign-in verification code. Use `context.activity.value.state` so Teams SDK can exchange the completed OAuth sign-in for the -provider token.
-* `context.api.users.getToken`: Verifies the completed -provider sign-in. Set `channelId` and `userId` from the activity, use the configured `connectionName`, and pass `state` as `code`.
-* `createLinkingSession`: Correlates linking with the verified user. Pass the activity's channel and user IDs, and persist a random, short-lived, single-use session ID for the remaining linking operations.
-* `ACCOUNT_LINKING_URL`: Identifies the app-hosted linking experience. Set it to an HTTPS URL whose host is included in `validDomains`, such as `https://app.contoso.com/authTab`.
-* `session`: Binds the linking page to the request. Add the generated session ID as a query parameter without placing access tokens or identity tokens in the URL.
-* `channelData.accountLinkingUrl`: Opens the connected-authentication dialog in Teams. Set it to the session-specific account-linking URL returned in the successful invoke response.
+- `state`: Supplies the one-time sign-in verification code. Use `context.activity.value.state` so Teams SDK can exchange the completed OAuth sign-in for the -provider token.
+- `context.api.users.getToken`: Verifies the completed -provider sign-in. Set `channelId` and `userId` from the activity, use the configured `connectionName`, and pass `state` as `code`.
+- `createLinkingSession`: Correlates linking with the verified user. Pass the activity's channel and user IDs, and persist a random, short-lived, single-use session ID for the remaining linking operations.
+- `ACCOUNT_LINKING_URL`: Identifies the app-hosted linking experience. Set it to an HTTPS URL whose host is included in `validDomains`, such as `https://app.contoso.com/authTab`.
+- `session`: Binds the linking page to the request. Add the generated session ID as a query parameter without placing access tokens or identity tokens in the URL.
+- `channelData.accountLinkingUrl`: Opens the connected-authentication dialog in Teams. Set it to the session-specific account-linking URL returned in the successful invoke response.
 
 > [!NOTE]
 > The Teams SDK TypeScript definitions currently declare the `signin/verifyState` response body as `void`. The example assigns the connected-authentication response payload after creating a typed invoke response.
@@ -216,14 +223,14 @@ const { accessToken } = await client
   .catch(() => client.acquireTokenPopup(request));
 ```
 
-* `teamsApp.initialize()`: Initializes the page in the Teams host. Call it before creating the MSAL client so NAA can use the host authentication broker.
-* `clientId`: Identifies the NAA Microsoft Entra application. Set `naaClientId` to the same application client ID as `webApplicationInfo.id` in the App manifest.
-* `authority`: Selects the Microsoft Entra tenant for authentication. Replace `naaTenantId` with the tenant ID supported by the app's account configuration.
-* `redirectUri`: Returns control through the trusted NAA broker. Set it to the same `brk-multihub://<app-host-name>` URI declared in `nestedAppAuthInfo`.
-* `supportsNestedAppAuth`: Enables brokered authentication in Microsoft 365 hosts. Set it to `true` when creating the nestable public client application.
-* `request.scopes`: Requests permissions for the Microsoft identity. Use the minimum scopes declared in `nestedAppAuthInfo`, such as `User.Read`.
-* `acquireTokenSilent`: Attempts authentication without prompting the user. Call it first to reuse the active Microsoft session and cached consent.
-* `acquireTokenPopup`: Handles authentication that requires user interaction. Use it when silent acquisition can't satisfy consent, Conditional Access, or reauthentication.
+- `teamsApp.initialize()`: Initializes the page in the Teams host. Call it before creating the MSAL client so NAA can use the host authentication broker.
+- `clientId`: Identifies the NAA Microsoft Entra application. Set `naaClientId` to the same application client ID as `webApplicationInfo.id` in the App manifest.
+- `authority`: Selects the Microsoft Entra tenant for authentication. Replace `naaTenantId` with the tenant ID supported by the app's account configuration.
+- `redirectUri`: Returns control through the trusted NAA broker. Set it to the same `brk-multihub://<app-host-name>` URI declared in `nestedAppAuthInfo`.
+- `supportsNestedAppAuth`: Enables brokered authentication in Microsoft 365 hosts. Set it to `true` when creating the nestable public client application.
+- `request.scopes`: Requests permissions for the Microsoft identity. Use the minimum scopes declared in `nestedAppAuthInfo`, such as `User.Read`.
+- `acquireTokenSilent`: Attempts authentication without prompting the user. Call it first to reuse the active Microsoft session and cached consent.
+- `acquireTokenPopup`: Handles authentication that requires user interaction. Use it when silent acquisition can't satisfy consent, Conditional Access, or reauthentication.
 
 The App manifest and runtime values for the client ID, redirect URI, and scopes must match.
 
@@ -245,9 +252,9 @@ Your account-linking page and backend must complete these operations:
    });
    ```
 
-   * `channelId`: Selects the channel for the primary token. Use the channel ID stored in the linking session to retrieve the token for the verified conversation.
-   * `userId`: Selects the user for the primary token. Use the user ID stored in the linking session to prevent linking another user's token.
-   * `connectionName`: Selects the  provider token to retrieve. Use the same OAuth connection as agent sign-in to supply the primary identity for linking.
+   - `channelId`: Selects the channel for the primary token. Use the channel ID stored in the linking session to retrieve the token for the verified conversation.
+   - `userId`: Selects the user for the primary token. Use the user ID stored in the linking session to prevent linking another user's token.
+   - `connectionName`: Selects the  provider token to retrieve. Use the same OAuth connection as agent sign-in to supply the primary identity for linking.
 
 1. Validate both identities immediately before linking.
 1. Call your identity provider's account-linking API.
@@ -294,16 +301,16 @@ Test at least the following scenarios:
 
 Follow these guidelines when you design and deploy connected authentication:
 
-* **Keep authentication states independent**: Don't infer the agent's authentication state from the tab's state.
-* **Preserve token boundaries**: Teams SDK retrieves the primary -provider token for the agent, while MSAL acquires the Microsoft Entra token for the account-linking page. Link verified identity records in your backend. Don't pass an agent token to the tab or expose tokens in URLs.
-* **Make account linking clear and optional**: Explain why the Microsoft account is requested and how linking affects the tab. Allow the user to continue or skip linking, and handle cancellation and failure.
-* **Correlate every attempt**: Bind each short-lived linking session to the user and conversation that completed sign-in. Use an integrity-protected, single-use correlation value across the NAA, PKCE, and linking operations.
-* **Require verified identities**: Don't link accounts based only on identifiers supplied by the client. Require recent authentication for both accounts and validate token issuer, audience, signature, tenant, expiration, nonce, and scopes.
-* **Protect authentication endpoints**: Validate the OAuth client at the token endpoint and add cross-site request forgery, replay, rate-limit, and abuse protections.
-* **Protect authentication data**: Store linking sessions and one-time codes in an encrypted, durable store with expiration and atomic consumption. Never log access tokens, ID tokens, authorization codes, cookies, or client secrets.
-* **Plan for account recovery**: Provide secure account unlinking and recovery, and handle revoked consent without treating the agent and tab as sharing one authentication session.
-* **Use production infrastructure**: Keep secrets in a managed secret store, rotate them regularly, and use a permanent app-owned HTTPS origin instead of a development tunnel.
-* **Complete security review**: Complete threat modeling, privacy review, consent review, and penetration testing before deployment.
+- **Keep authentication states independent**: Don't infer the agent's authentication state from the tab's state.
+- **Preserve token boundaries**: Teams SDK retrieves the primary -provider token for the agent, while MSAL acquires the Microsoft Entra token for the account-linking page. Link verified identity records in your backend. Don't pass an agent token to the tab or expose tokens in URLs.
+- **Make account linking clear and optional**: Explain why the Microsoft account is requested and how linking affects the tab. Allow the user to continue or skip linking, and handle cancellation and failure.
+- **Correlate every attempt**: Bind each short-lived linking session to the user and conversation that completed sign-in. Use an integrity-protected, single-use correlation value across the NAA, PKCE, and linking operations.
+- **Require verified identities**: Don't link accounts based only on identifiers supplied by the client. Require recent authentication for both accounts and validate token issuer, audience, signature, tenant, expiration, nonce, and scopes.
+- **Protect authentication endpoints**: Validate the OAuth client at the token endpoint and add cross-site request forgery, replay, rate-limit, and abuse protections.
+- **Protect authentication data**: Store linking sessions and one-time codes in an encrypted, durable store with expiration and atomic consumption. Never log access tokens, ID tokens, authorization codes, cookies, or client secrets.
+- **Plan for account recovery**: Provide secure account unlinking and recovery, and handle revoked consent without treating the agent and tab as sharing one authentication session.
+- **Use production infrastructure**: Keep secrets in a managed secret store, rotate them regularly, and use a permanent app-owned HTTPS origin instead of a development tunnel.
+- **Complete security review**: Complete threat modeling, privacy review, consent review, and penetration testing before deployment.
 
 > [!CAUTION]
 > The sample implementation used for the code snippets stores linking data in memory and includes a single-pending-session fallback for local testing. Don't use either approach in a concurrent or multi-user deployment.
@@ -337,9 +344,9 @@ Configure and test [Nested app authentication](nested-authentication.md) for the
 
 ## See also
 
-* [Authenticate users in Microsoft Teams](authentication.md)
-* [Add authentication to a Teams agent or bot](../../bots/how-to/authentication/add-authentication.md)
-* [Nested app authentication](nested-authentication.md)
-* [App manifest schema](/microsoftteams/platform/resources/schema/manifest-schema)
-* [Teams SDK documentation](https://microsoft.github.io/teams-sdk/)
-* [Auth0 user account linking](https://auth0.com/docs/manage-users/user-accounts/user-account-linking/link-user-accounts)
+- [Authenticate users in Microsoft Teams](authentication.md)
+- [Add authentication to a Teams agent or bot](../../bots/how-to/authentication/add-authentication.md)
+- [Nested app authentication](nested-authentication.md)
+- [App manifest schema](/microsoftteams/platform/resources/schema/manifest-schema)
+- [Teams SDK documentation](https://microsoft.github.io/teams-sdk/)
+- [Auth0 user account linking](https://auth0.com/docs/manage-users/user-accounts/user-account-linking/link-user-accounts)
