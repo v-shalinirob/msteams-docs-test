@@ -150,9 +150,14 @@ import { InvokeResponse } from '@microsoft/teams.api';
 const accountLinkingUrl = process.env.ACCOUNT_LINKING_URL;
  
 app.on('signin.verify-state', async (context) => {
-  const state = context.activity.value.state;
-  if (!state || !accountLinkingUrl) {
-    return { status: 404 };
+const state = context.activity.value.state;
+if (!state) {
+  return { status: 404 };
+}
+ 
+if (!accountLinkingUrl) {
+  context.log.error('ACCOUNT_LINKING_URL is not configured.');
+  return { status: 503 };
   }
  
   try {
