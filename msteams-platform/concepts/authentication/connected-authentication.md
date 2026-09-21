@@ -22,11 +22,11 @@ The connected authentication experience works as follows:
 :::image type="content" source="../../assets/images/authentication/connected-authentication/authentication-flow.png" alt-text="This image shows the authentication flow for connected authentication.":::
 
 1. The user opens the agent or bot and is prompted to sign in with the app's external identity provider.
-1. After sign-in succeeds, Teams opens an account-linking dialog that explains how linking the user's Microsoft identity enables access to the associated tab.
+1. After sign-in succeeds, the user chooses whether to link that account to their Microsoft identity for access to the associated tab.
 1. If the user chooses to link the accounts, they review and accept any required Microsoft identity permissions.
-1. After linking succeeds, Teams closes the dialog. The user can open the associated tab without another sign-in prompt.
-1. If consent, Conditional Access, or reauthentication is required later, the app displays a Microsoft identity prompt.
-1. If the user skips linking or later revokes it, the agent or bot remains independently authenticated, while the tab uses its existing sign-in flow or the app restarts account linking from the agent.
+1. After linking succeeds, the user can open the associated tab without another sign-in prompt.
+
+If the user skips linking or later revokes it, the agent or bot remains independently authenticated, while the tab uses its existing sign-in flow or the app restarts account linking from the agent. If consent, Conditional Access, or reauthentication is required later, the app displays a Microsoft identity prompt.
 
 ## Implement connected authentication
 
