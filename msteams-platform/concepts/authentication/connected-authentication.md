@@ -54,7 +54,7 @@ Before you implement connected authentication, you need:
 - An Azure bot resource with an OAuth connection for your identity provider.
 - A Microsoft Entra app registration configured for NAA.
 - An identity provider that supports account linking and Authorization Code flow with PKCE.
-- A public HTTPS origin that hosts your agent or bot endpoint, account-linking page, and OAuth bridge endpoints.
+- A public HTTPS origin that hosts your agent or bot endpoint, account-linking  popup, and OAuth bridge endpoints.
 - An account-linking URL, such as `https://app.contoso.com/authTab`.
 
 For information about registering the trusted broker redirect and acquiring NAA tokens, see [Nested app authentication](nested-authentication.md).
@@ -91,7 +91,7 @@ Use App manifest version 1.22 or later to add `nestedAppAuthInfo`. The following
 ```
 
 - `bots[0].botId`: Identifies the agent or bot registration. Set it to the Microsoft Entra application client ID to route Teams activities to the registered agent or bot.
-- `validDomains`: Allows Teams to load the linking page. Add the host name from `ACCOUNT_LINKING_URL`, such as `app.contoso.com`, so the page can open in Teams.
+- `validDomains`: Allows Teams to load the linking  popup. Add the host name from `ACCOUNT_LINKING_URL`, such as `app.contoso.com`, so the  popup can open in Teams.
 - `webApplicationInfo.id`: Identifies the app requesting Microsoft tokens. Set it to the same Microsoft Entra application client ID used at runtime to connect the app manifest to the NAA token request.
 - `webApplicationInfo.resource`: Identifies the agent or bot API resource. Set the application ID URI, such as `api://botid-${{ENTRA_APP_ID}}`, to associate the Teams app with its protected API.
 - `nestedAppAuthInfo.redirectUri`: Registers the trusted NAA broker redirect. Set the SPA redirect to `brk-multihub://<app-host-name>` without a path so Microsoft 365 hosts can broker NAA authentication.
@@ -202,7 +202,7 @@ app.on('signin.verify-state', async (context) => {
 - `ACCOUNT_LINKING_URL`: Identifies the app-hosted linking experience. Set it to an HTTPS URL whose host is included in `validDomains`, such as `https://app.contoso.com/authTab`. The example returns `503` when this required server configuration is missing.
 - `context.api.users.getToken`: Verifies the completed external-provider sign-in. Set `channelId` and `userId` from the activity, use the configured `connectionName`, and pass `state` as `code`. The example returns `412` when the exchange fails.
 - `createLinkingSession`: Correlates linking with the verified user. Pass the activity's channel and user IDs to create the session used by the remaining linking operations.
-- `session`: Binds the linking page to the verified request. Add the generated session ID as a query parameter without placing access tokens or identity tokens in the URL.
+- `session`: Binds the linking  popup to the verified request. Add the generated session ID as a query parameter without placing access tokens or identity tokens in the URL.
 - `channelData.accountLinkingUrl`: Opens the connected-authentication dialog in Teams. Set it to the session-specific URL and return it with HTTP `200` in the invoke response.
 
 > [!NOTE]
@@ -242,7 +242,7 @@ const { accessToken } = await client.acquireTokenSilent(request).catch(
 );
 ```
 
-- `teamsApp.initialize()`: Initializes the page in the Teams host. Call it before creating the MSAL client so NAA can use the host authentication broker.
+- `teamsApp.initialize()`: Initializes the  popup in the Teams host. Call it before creating the MSAL client so NAA can use the host authentication broker.
 - `authority`: Selects the Microsoft Entra tenant for authentication. Replace `naaTenantId` with the tenant ID supported by the app's account configuration.
 - `supportsNestedAppAuth`: Enables brokered authentication in Microsoft 365 hosts. Set it to `true` when creating the nestable public client application.
 - `acquireTokenSilent`: Attempts authentication without prompting the user. Call it first to reuse the active Microsoft session and cached consent.
@@ -273,15 +273,15 @@ Account-linking should complete these operations:
    - `connectionName`: Selects the identity-provider token to retrieve. Use the same OAuth connection as the agent or bot sign-in to supply the primary identity for linking.
 
 1. Validate both identities immediately before linking.
-1. Call your identity provider's account-linking API.
+1. Call the identity provider's account-linking API.
 1. Delete the linking session, temporary token, and authorization code.
-1. Return success to the account-linking page and close the Teams dialog.
+1. Return success for linking accounts and close the Teams dialog.
 
 The following table shows example app-hosted endpoints for completing the connected authentication flow:
 
 | Endpoint | Purpose |
 | --- | --- |
-| `GET /authTab` | Renders the account-linking page for a valid linking session. |
+| `GET /authTab` | Renders the account-linking  popup for a valid linking session. |
 | `POST /api/setAuthToken` | Accepts the NAA token over HTTPS and binds it to the linking session. |
 | `GET /api/authorize` | Validates the identity-provider callback and issues a short-lived, single-use authorization code. |
 | `POST /api/token` | Exchanges the one-time code for the NAA access token used by the identity provider's custom connection. |
@@ -293,7 +293,7 @@ Test at least the following scenarios:
 
 | Scenario | Expected result |
 | --- | --- |
-| First agent or bot sign-in | The identity provider authenticates the user and Teams opens the account-linking page. |
+| First agent or bot sign-in | The identity provider authenticates the user and Teams opens the account-linking  popup. |
 | Account-linking consent | NAA obtains the requested Microsoft token and the backend links the verified identities. |
 | Tab open after linking | The tab authenticates silently with the linked Microsoft identity. |
 | Different device with an active Teams session | The linked Microsoft identity authenticates the user even when the original identity-provider session isn't available. |
