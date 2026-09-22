@@ -99,7 +99,7 @@ Use App manifest version 1.22 or later to add `nestedAppAuthInfo`. The following
 
 ### Configure Teams SDK authentication
 
-Set the external provider's OAuth connection as the default connection for the app:
+Set the external provider's OAuth connection as the default connection for your agent or app:
 
 ```typescript
 import { App, ExpressAdapter } from '@microsoft/teams.apps';
@@ -147,7 +147,7 @@ app.event('signin', async ({ send }) => {
 
 Handle `signin.verify-state` to exchange the state code for the external-provider token. Create a short-lived linking session that binds the Teams channel and user to the account-linking request. Return the session-specific account-linking URL in the invoke response:
 
-The example uses an app-defined `createLinkingSession()` helper. The helper must generate a cryptographically random session ID, persist its association with the verified channel and user, set a short expiration, and allow the session to be consumed only once.
+The example uses an app-defined `createLinkingSession()` helper. The helper must generate a session ID, persist its association with the verified channel and user, set a short expiration, and allow the session to be consumed only once.
 
 ```typescript
 import { InvokeResponse } from '@microsoft/teams.api';
@@ -210,7 +210,7 @@ app.on('signin.verify-state', async (context) => {
 
 ### Acquire the Microsoft identity with NAA
 
-Initialize MSAL for NAA on the account-linking page. Attempt silent token acquisition first and use an interactive prompt only when required:
+Initialize MSAL for NAA for linking accounts. Attempt silent token acquisition first and use an interactive prompt only when required:
 
 ```typescript
 import { app as teamsApp } from '@microsoft/teams-js';
@@ -252,7 +252,7 @@ Set the runtime client ID, redirect URI, and scopes to exactly the same values a
 
 ### Complete account linking
 
-Your account-linking page and backend must complete these operations:
+Account-linking should complete these operations:
 
 1. Post the NAA token to your backend over HTTPS with the short-lived linking-session ID.
 1. Start the identity provider's Authorization Code flow with PKCE for the secondary Microsoft connection.
