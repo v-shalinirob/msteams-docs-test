@@ -332,7 +332,9 @@ Follow these guidelines when you design and deploy connected authentication:
 
 ## Error codes
 
-Connected authentication doesn't define a standardized set of error codes. The following status and error codes are application-defined responses used in the sample or responses returned by the configured identity provider:
+[Note: Connected authentication doesn't define a standardized set of error codes. The following status and error codes are application-defined responses used in the code sample or responses returned by the configured identity provider.]
+
+Ensure to handle these errors appropriately in your agent or app:
 
 | Status code | Error code | Description | Developer action |
 | --- | --- | --- | --- |
