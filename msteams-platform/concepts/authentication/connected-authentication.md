@@ -15,7 +15,7 @@ Connected authentication combines sign-in and authentication flow for a **Teams 
 
 ## User experience
 
-Connected authentication streamlines the authentication flows for an agent or bot and an associated tab through account linking. Users sign in to the conversational capability first and can then link that account to their Microsoft identity. After linking, the hosted experience can authenticate the user through their active Microsoft session, reducing repeated prompts across app capabilities.
+Connected authentication streamlines the authentication flows for an agent or bot and an associated tab through account linking. Users sign in to the agent or bot first and can then link that account to their Microsoft identity. After linking, the hosted experience can authenticate the user through their active Microsoft session, reducing repeated prompts across app capabilities.
 
 [Placeholder: Screenshots of connected auth pop-up.]
 
@@ -43,7 +43,7 @@ Connected authentication links identity records; it doesn't combine or share acc
 
 ## Implement connected authentication
 
-Coordinate the App manifest, Teams SDK agent or bot sign-in, NAA token acquisition, and backend identity linking so the tab can authenticate the linked user.
+Coordinate the app manifest, Teams SDK agent or bot sign-in, NAA token acquisition, and backend identity linking so the tab can authenticate the linked user.
 
 ### Prerequisites
 
@@ -51,7 +51,7 @@ Before you implement connected authentication, you need:
 
 - A Teams app with a personal agent or bot and a tab.
 - A Teams SDK TypeScript project using `@microsoft/teams.apps`, `@microsoft/teams.api`, and related Teams SDK packages.
-- An Azure Bot resource with an OAuth connection for your identity provider.
+- An Azure bot resource with an OAuth connection for your identity provider.
 - A Microsoft Entra app registration configured for NAA.
 - An identity provider that supports account linking and Authorization Code flow with PKCE.
 - A public HTTPS origin that hosts your agent or bot endpoint, account-linking page, and OAuth bridge endpoints.
@@ -92,14 +92,14 @@ Use App manifest version 1.22 or later to add `nestedAppAuthInfo`. The following
 
 - `bots[0].botId`: Identifies the agent or bot registration. Set it to the Microsoft Entra application client ID to route Teams activities to the registered agent or bot.
 - `validDomains`: Allows Teams to load the linking page. Add the host name from `ACCOUNT_LINKING_URL`, such as `app.contoso.com`, so the page can open in Teams.
-- `webApplicationInfo.id`: Identifies the app requesting Microsoft tokens. Set it to the same Microsoft Entra application client ID used at runtime to connect the App manifest to the NAA token request.
+- `webApplicationInfo.id`: Identifies the app requesting Microsoft tokens. Set it to the same Microsoft Entra application client ID used at runtime to connect the app manifest to the NAA token request.
 - `webApplicationInfo.resource`: Identifies the agent or bot API resource. Set the application ID URI, such as `api://botid-${{ENTRA_APP_ID}}`, to associate the Teams app with its protected API.
 - `nestedAppAuthInfo.redirectUri`: Registers the trusted NAA broker redirect. Set the SPA redirect to `brk-multihub://<app-host-name>` without a path so Microsoft 365 hosts can broker NAA authentication.
 - `nestedAppAuthInfo.scopes`: Declares permissions requested during NAA authentication. Add the exact runtime scopes, such as `User.Read`, to enable token prefetch and Microsoft Entra consent validation.
 
 ### Configure Teams SDK authentication
 
-Set the external provider's OAuth connection as the default connection for the Teams SDK app:
+Set the external provider's OAuth connection as the default connection for the app:
 
 ```typescript
 import { App, ExpressAdapter } from '@microsoft/teams.apps';
