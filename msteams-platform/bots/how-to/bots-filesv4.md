@@ -63,7 +63,7 @@ The following table summarizes scope and permission requirements:
 | Receive inline images | Supported through activity attachments | Use activity attachments | Use activity attachments | Use the app's authenticated HTTP client. |
 | Send inline images | Supported | Supported | Supported | No Graph permission or user sign-in is required. |
 
-## Implement
+## Receive files
 
 ### Configure file support
 
@@ -242,6 +242,8 @@ Key APIs and values:
 
 Remove sensitive URLs and identifiers before logging raw attachment data. Inline images, cards, mentions, link previews, HTML attachments, and malformed file entries aren't returned through `context.Files`; access them through `context.Activity.Attachments`.
 
+## Send files
+
 ### Send files in personal chat
 
 The file-consent workflow is available only in personal chats:
@@ -356,6 +358,8 @@ Use Microsoft Graph when your app must send or retrieve stored files outside the
 * Post a message attachment that references an existing stored file.
 
 For more information, see [send chat message file attachments](/graph/api/chatmessage-post?view=graph-rest-beta&preserve-view=true&tabs=http#example-4-file-attachments) and [OneDrive and SharePoint APIs](/onedrive/developer/rest-api/).
+
+## Work with inline images
 
 ### Receive inline images
 
