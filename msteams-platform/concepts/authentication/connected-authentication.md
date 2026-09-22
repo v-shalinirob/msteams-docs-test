@@ -3,7 +3,7 @@ title: Connect agent and tab authentication
 description: Learn how connected authentication links an agent or bot sign-in to a Microsoft identity for seamless access to an associated tab.
 ms.topic: how-to
 ms.localizationpriority: medium
-ms.date: 09/18/2026
+ms.date: 09/22/2026
 ---
 
 # Connect agent and tab authentication
@@ -97,7 +97,7 @@ Use App manifest version 1.22 or later to add `nestedAppAuthInfo`. The following
 
 ### Configure Teams SDK authentication
 
-Set the  provider's OAuth connection as the default connection for the Teams SDK app:
+Set the external provider's OAuth connection as the default connection for the Teams SDK app:
 
 ```typescript
 import { App, ExpressAdapter } from '@microsoft/teams.apps';
@@ -114,9 +114,10 @@ const app = new App({
 });
 ```
 
-- `applicationIdUri`: Identifies the protected agent or bot resource. Set it to the app registration URI from `RESOURCE_URI` to associate Teams SDK authentication with the registered API.
-- `httpServerAdapter`: Hosts Teams routes in the web server. Set it to an `ExpressAdapter` instance to receive sign-in activities and serve account-linking endpoints.
-- `oauth.defaultConnectionName`: Selects the agent's  OAuth connection. Set it to the Azure Bot OAuth connection name, such as `Auth0`, that handles the initial sign-in.
+- `connectionName`: Identifies the external OAuth connection. Set `CONNECTION_NAME` to the exact name of the OAuth connection configured for the Azure Bot resource; the example uses `Auth0` when the environment variable isn't set.
+- `applicationIdUri`: Identifies the protected agent or bot resource. Set `RESOURCE_URI` to the application ID URI configured in Microsoft Entra ID.
+- `httpServerAdapter`: Connects the Teams SDK app to the web server. Create an `ExpressAdapter` instance so the app can receive activities and register the account-linking routes on the same server.
+- `oauth.defaultConnectionName`: Selects the connection used by `signin()` and token retrieval. Set it to `connectionName` so both operations use the same external identity provider.
 
 Start sign-in when the user sends a message and handle the successful sign-in event:
 
@@ -137,12 +138,12 @@ app.event('signin', async ({ send }) => {
 ```
 
 - `isSignedIn`: Indicates whether the agent user authenticated. Use the value supplied by Teams SDK for the current activity to avoid starting another sign-in for an authenticated user.
-- `signin()`: Starts the configured  OAuth sign-in. Call it without a connection name to use the default connection and authenticate the primary account before account linking.
-- `app.event('signin', ...)`: Handles successful  provider authentication. Register a handler for the `signin` event so the agent can continue into connected authentication.
+- `signin()`: Starts the configured external OAuth sign-in. Call it without a connection name to use `oauth.defaultConnectionName` and authenticate the primary account before account linking.
+- `app.event('signin', ...)`: Handles successful external-provider authentication. Register the event handler to notify the user that sign-in succeeded and account linking can continue.
 
 ### Return the account-linking URL
 
-Handle `signin.verify-state` to exchange the state code for the -provider token. Create a short-lived linking session that binds the Teams channel and user to the account-linking request. Return the session-specific account-linking URL in the invoke response:
+Handle `signin.verify-state` to exchange the state code for the external-provider token. Create a short-lived linking session that binds the Teams channel and user to the account-linking request. Return the session-specific account-linking URL in the invoke response:
 
 ```typescript
 import { InvokeResponse } from '@microsoft/teams.api';
@@ -150,14 +151,14 @@ import { InvokeResponse } from '@microsoft/teams.api';
 const accountLinkingUrl = process.env.ACCOUNT_LINKING_URL;
  
 app.on('signin.verify-state', async (context) => {
-const state = context.activity.value.state;
-if (!state) {
-  return { status: 404 };
-}
+  const state = context.activity.value.state;
+  if (!state) {
+    return { status: 404 };
+  }
  
-if (!accountLinkingUrl) {
-  context.log.error('ACCOUNT_LINKING_URL is not configured.');
-  return { status: 503 };
+  if (!accountLinkingUrl) {
+    context.log.error('ACCOUNT_LINKING_URL is not configured.');
+    return { status: 503 };
   }
  
   try {
@@ -173,7 +174,7 @@ if (!accountLinkingUrl) {
   }
  
   // Bind the linking request to the verified user and conversation.
-  const sessionId = await createLinkingSession(
+  const sessionId = createLinkingSession(
     context.activity.channelId,
     context.activity.from.id
   );
@@ -193,12 +194,12 @@ if (!accountLinkingUrl) {
 });
 ```
 
-- `state`: Supplies the one-time sign-in verification code. Use `context.activity.value.state` so Teams SDK can exchange the completed OAuth sign-in for the -provider token.
-- `context.api.users.getToken`: Verifies the completed -provider sign-in. Set `channelId` and `userId` from the activity, use the configured `connectionName`, and pass `state` as `code`.
-- `createLinkingSession`: Correlates linking with the verified user. Pass the activity's channel and user IDs, and persist a random, short-lived, single-use session ID for the remaining linking operations.
-- `ACCOUNT_LINKING_URL`: Identifies the app-hosted linking experience. Set it to an HTTPS URL whose host is included in `validDomains`, such as `https://app.contoso.com/authTab`.
-- `session`: Binds the linking page to the request. Add the generated session ID as a query parameter without placing access tokens or identity tokens in the URL.
-- `channelData.accountLinkingUrl`: Opens the connected-authentication dialog in Teams. Set it to the session-specific account-linking URL returned in the successful invoke response.
+- `state`: Supplies the one-time sign-in verification code. Read it from `context.activity.value.state`. Return `404` when it isn't present so the request doesn't continue without a verifiable sign-in state.
+- `ACCOUNT_LINKING_URL`: Identifies the app-hosted linking experience. Set it to an HTTPS URL whose host is included in `validDomains`, such as `https://app.contoso.com/authTab`. The example returns `503` when this required server configuration is missing.
+- `context.api.users.getToken`: Verifies the completed external-provider sign-in. Set `channelId` and `userId` from the activity, use the configured `connectionName`, and pass `state` as `code`. The example returns `412` when the exchange fails.
+- `createLinkingSession`: Correlates linking with the verified user. Pass the activity's channel and user IDs. The app-defined helper must persist a random, expiring, single-use session ID for the remaining linking operations.
+- `session`: Binds the linking page to the verified request. Add the generated session ID as a query parameter without placing access tokens or identity tokens in the URL.
+- `channelData.accountLinkingUrl`: Opens the connected-authentication dialog in Teams. Set it to the session-specific URL and return it with HTTP `200` in the invoke response.
 
 > [!NOTE]
 > The Teams SDK TypeScript definitions currently declare the `signin/verifyState` response body as `void`. The example assigns the connected-authentication response payload after creating a typed invoke response.
@@ -340,7 +341,7 @@ Connected authentication doesn't define a standardized set of error codes. The f
 | HTTP `412` | Sign-in state verification failed | Teams SDK couldn't exchange the sign-in state for the -provider token. | Verify the OAuth connection name and provider configuration. Treat the state as expired or invalid and ask the user to start a new sign-in attempt. |
 | HTTP `500` | Account linking failed | An unexpected error prevented the backend from linking the accounts. | Log a correlation identifier without logging tokens, return a generic failure message, and investigate identity validation, storage, and provider communication before retrying. |
 | HTTP `502` | Identity provider rejected request | The identity provider returned an unsuccessful response to the account-linking request. | Inspect the upstream status, verify the provider endpoint and request, and retry only if the failure is transient. Don't return provider tokens or sensitive response details to the client. |
-| HTTP `503` | Account linking not configured | The backend doesn't have the -provider configuration required to link accounts. | Configure the provider domain, OAuth connection, credentials, and account-linking permissions before enabling the flow. |
+| HTTP `503` | Account linking not configured | The backend doesn't have the account-linking URL or external-provider configuration required to link accounts. | Configure `ACCOUNT_LINKING_URL`, the provider domain, OAuth connection, credentials, and account-linking permissions before enabling the flow. |
 | HTTP `401` or `403` | Identity provider authorization failed | The primary -provider token has the wrong audience or lacks permission to link identities. | Configure the OAuth connection to request the provider's account-management API audience and identity-linking scopes, then have the user sign in again to obtain a new token. |
 
 ## Code sample
