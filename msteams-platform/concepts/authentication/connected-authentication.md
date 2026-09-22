@@ -39,6 +39,8 @@ The connected authentication flow works as follows:
 
 If the user skips linking or later revokes it, the agent or bot remains independently authenticated, while the tab uses its existing sign-in flow or the app restarts account linking from the agent. If consent, Conditional Access, or reauthentication is required later, the app displays a Microsoft identity prompt.
 
+Connected authentication links identity records; it doesn't combine or share access tokens between the agent or bot and the tab.
+
 ## Implement connected authentication
 
 Coordinate the App manifest, Teams SDK agent sign-in, NAA token acquisition, and backend identity linking so the tab can authenticate the linked user.
@@ -316,7 +318,7 @@ Test at least the following scenarios:
 Follow these guidelines when you design and deploy connected authentication:
 
 - **Keep authentication states independent**: Don't infer the agent's authentication state from the tab's state.
-- **Preserve token boundaries**: Teams SDK retrieves the primary -provider token for the agent, while MSAL acquires the Microsoft Entra token for the account-linking page. Link verified identity records in your backend. Don't pass an agent token to the tab or expose tokens in URLs.
+- **Preserve token boundaries**: Use each token only for its intended resource and audience, and never pass tokens between app capabilities or expose them in URLs.
 - **Make account linking clear and optional**: Explain why the Microsoft account is requested and how linking affects the tab. Allow the user to continue or skip linking, and handle cancellation and failure.
 - **Correlate every attempt**: Bind each short-lived linking session to the user and conversation that completed sign-in. Use an integrity-protected, single-use correlation value across the NAA, PKCE, and linking operations.
 - **Require verified identities**: Don't link accounts based only on identifiers supplied by the client. Require recent authentication for both accounts and validate token issuer, audience, signature, tenant, expiration, nonce, and scopes.
