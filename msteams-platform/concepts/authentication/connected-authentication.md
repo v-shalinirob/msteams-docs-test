@@ -310,7 +310,6 @@ Test at least the following scenarios:
 | NAA can't find the application | Ensure that `webApplicationInfo.id`, the runtime client ID, and the Microsoft Entra app registration are the same. |
 | NAA doesn't use a prefetched token | Ensure that the client ID, broker redirect, scopes, and optional claims exactly match the runtime request. |
 | The  provider rejects the callback | Register the exact HTTPS account-linking callback and its origin in the provider's application settings. |
-| Authorization fails after leaving the Teams webview | Don't depend on third-party cookies for correlation. Use an integrity-protected, single-use correlation value. |
 | The tab prompts again after successful linking | Verify that the secondary Microsoft identity is linked to the primary  account and that the tab uses the NAA connection. |
 
 ## Design guidelines and best practices
@@ -320,7 +319,7 @@ Follow these guidelines when you design and deploy connected authentication:
 - **Keep authentication states independent**: Don't infer the agent's authentication state from the tab's state.
 - **Preserve token boundaries**: Use each token only for its intended resource and audience, and never pass tokens between app capabilities or expose them in URLs.
 - **Make account linking clear and optional**: Explain why the Microsoft account is requested and how linking affects the tab. Allow the user to continue or skip linking, and handle cancellation and failure.
-- **Correlate every attempt**: Bind each short-lived linking session to the user and conversation that completed sign-in. Use an integrity-protected, single-use correlation value across the NAA, PKCE, and linking operations.
+- **Isolate account-linking attempts**: Prevent concurrent or replayed requests from linking identities that belong to different users or conversations.
 - **Require verified identities**: Don't link accounts based only on identifiers supplied by the client. Require recent authentication for both accounts and validate token issuer, audience, signature, tenant, expiration, nonce, and scopes.
 - **Protect authentication endpoints**: Validate the OAuth client at the token endpoint and add cross-site request forgery, replay, rate-limit, and abuse protections.
 - **Protect authentication data**: Store linking sessions and one-time codes in an encrypted, durable store with expiration and atomic consumption. Never log access tokens, ID tokens, authorization codes, cookies, or client secrets.
@@ -337,9 +336,9 @@ Connected authentication doesn't define a standardized set of error codes. The f
 
 | Status code | Error code | Description | Developer action |
 | --- | --- | --- | --- |
-| HTTP `400` | Invalid token or request | The token submission, authorization request, authorization code, or account-linking request is invalid. | Validate required request values and reject malformed input. If the authorization code or linking session expired, discard it and ask the user to start sign-in again. |
+| HTTP `400` | Invalid token or request | The token submission, authorization request, authorization code, or account-linking request is invalid. | Validate required values, reject malformed input, and ask the user to restart sign-in when the request can't be recovered. |
 | HTTP `404` | Missing sign-in state | The `signin/verifyState` activity doesn't contain the state value required to complete  sign-in. | Confirm that the agent starts sign-in through its configured OAuth connection and that the activity includes `value.state`. Ask the user to restart sign-in instead of continuing without state. |
-| HTTP `410` | Expired linking session | The account-linking session expired or no longer exists. | Delete any temporary tokens and authorization codes associated with the session, then ask the user to restart sign-in from the agent. |
+| HTTP `410` | Expired linking session | The account-linking session expired or no longer exists. | Ask the user to restart sign-in from the agent or bot. |
 | HTTP `412` | Sign-in state verification failed | Teams SDK couldn't exchange the sign-in state for the -provider token. | Verify the OAuth connection name and provider configuration. Treat the state as expired or invalid and ask the user to start a new sign-in attempt. |
 | HTTP `500` | Account linking failed | An unexpected error prevented the backend from linking the accounts. | Log a correlation identifier without logging tokens, return a generic failure message, and investigate identity validation, storage, and provider communication before retrying. |
 | HTTP `502` | Identity provider rejected request | The identity provider returned an unsuccessful response to the account-linking request. | Inspect the upstream status, verify the provider endpoint and request, and retry only if the failure is transient. Don't return provider tokens or sensitive response details to the client. |
