@@ -147,6 +147,8 @@ app.event('signin', async ({ send }) => {
 
 Handle `signin.verify-state` to exchange the state code for the external-provider token. Create a short-lived linking session that binds the Teams channel and user to the account-linking request. Return the session-specific account-linking URL in the invoke response:
 
+The example uses an app-defined `createLinkingSession()` helper. The helper must generate a cryptographically random session ID, persist its association with the verified channel and user, set a short expiration, and allow the session to be consumed only once.
+
 ```typescript
 import { InvokeResponse } from '@microsoft/teams.api';
  
@@ -199,7 +201,7 @@ app.on('signin.verify-state', async (context) => {
 - `state`: Supplies the one-time sign-in verification code. Read it from `context.activity.value.state`. Return `404` when it isn't present so the request doesn't continue without a verifiable sign-in state.
 - `ACCOUNT_LINKING_URL`: Identifies the app-hosted linking experience. Set it to an HTTPS URL whose host is included in `validDomains`, such as `https://app.contoso.com/authTab`. The example returns `503` when this required server configuration is missing.
 - `context.api.users.getToken`: Verifies the completed external-provider sign-in. Set `channelId` and `userId` from the activity, use the configured `connectionName`, and pass `state` as `code`. The example returns `412` when the exchange fails.
-- `createLinkingSession`: Correlates linking with the verified user. Pass the activity's channel and user IDs. The app-defined helper must persist a random, expiring, single-use session ID for the remaining linking operations.
+- `createLinkingSession`: Correlates linking with the verified user. Pass the activity's channel and user IDs to create the session used by the remaining linking operations.
 - `session`: Binds the linking page to the verified request. Add the generated session ID as a query parameter without placing access tokens or identity tokens in the URL.
 - `channelData.accountLinkingUrl`: Opens the connected-authentication dialog in Teams. Set it to the session-specific URL and return it with HTTP `200` in the invoke response.
 
@@ -211,6 +213,7 @@ app.on('signin.verify-state', async (context) => {
 Initialize MSAL for NAA on the account-linking page. Attempt silent token acquisition first and use an interactive prompt only when required:
 
 ```typescript
+import { app as teamsApp } from '@microsoft/teams-js';
 import {
   InteractionRequiredAuthError,
   createNestablePublicClientApplication,
@@ -222,7 +225,7 @@ const client = await createNestablePublicClientApplication({
   auth: {
     clientId: naaClientId,
     authority: `https://login.microsoftonline.com/${naaTenantId}`,
-    redirectUri: 'xxx-xxxxx://app.contoso.com',
+    redirectUri: 'brk-multihub://app.contoso.com',
     supportsNestedAppAuth: true,
   },
 });
@@ -240,15 +243,12 @@ const { accessToken } = await client.acquireTokenSilent(request).catch(
 ```
 
 - `teamsApp.initialize()`: Initializes the page in the Teams host. Call it before creating the MSAL client so NAA can use the host authentication broker.
-- `clientId`: Identifies the NAA Microsoft Entra application. Set `naaClientId` to the same application client ID as `webApplicationInfo.id` in the App manifest.
 - `authority`: Selects the Microsoft Entra tenant for authentication. Replace `naaTenantId` with the tenant ID supported by the app's account configuration.
-- `redirectUri`: Returns control through the trusted NAA broker. Set it to the same `brk-multihub://<app-host-name>` URI declared in `nestedAppAuthInfo`.
 - `supportsNestedAppAuth`: Enables brokered authentication in Microsoft 365 hosts. Set it to `true` when creating the nestable public client application.
-- `request.scopes`: Requests permissions for the Microsoft identity. Use the minimum scopes declared in `nestedAppAuthInfo`, such as `User.Read`.
 - `acquireTokenSilent`: Attempts authentication without prompting the user. Call it first to reuse the active Microsoft session and cached consent.
 - `acquireTokenPopup`: Handles authentication that requires user interaction. Use it when silent acquisition can't satisfy consent, Conditional Access, or reauthentication.
 
-The App manifest and runtime values for the client ID, redirect URI, and scopes must match.
+Set the runtime client ID, redirect URI, and scopes to exactly the same values as `webApplicationInfo.id` and `nestedAppAuthInfo` in the App manifest. Any mismatch prevents Teams from serving a prefetched token.
 
 ### Complete account linking
 
