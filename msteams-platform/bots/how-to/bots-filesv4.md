@@ -58,7 +58,7 @@ The following table summarizes scope and permission requirements:
 
 | Operation | Personal chat | Group chat | Channel | Requirement |
 | --- | --- | --- | --- | --- |
-| Receive files with the Teams SDK file accessor | Supported | Not explicitly supported | Not explicitly supported | Bots use a pre-authorized URL. Agentic users require Graph file permissions. |
+| Receive files with the Teams SDK file accessor | Supported | Not explicitly supported | Not explicitly supported | Agentic users require Graph file permissions. Bots use a pre-authorized URL. |
 | Send files with file consent | Supported | Not supported | Not supported | Set `supportsFiles` to `true` for bots. |
 | Send or retrieve files with Graph | Supported | Supported | Supported | Configure the appropriate OneDrive or SharePoint permissions. |
 | Receive inline images | Supported through activity attachments | Use activity attachments | Use activity attachments | Use the app's authenticated HTTP client. |
@@ -67,6 +67,16 @@ The following table summarizes scope and permission requirements:
 ## Receive files
 
 ### Configure file support
+
+#### Agentic user
+
+For an agentic user, configure a Microsoft Graph file permission on the agent blueprint and obtain administrator consent. The agentic user retrieves file content through Microsoft Graph with its own identity. For more information, see [inheritable permissions](/entra/agent-id/concept-inheritable-permissions).
+
+> [!IMPORTANT]
+>
+> Configure and consent the blueprint permission before testing file retrieval. Without a Graph credential, the SDK raises a file credential error.
+
+#### Bot
 
 For a bot, set `supportsFiles` to `true` in the bot entry of the app manifest:
 
@@ -89,8 +99,6 @@ Key values:
 * `supportsFiles`: Set `true` to expose the file attachment control.
 
 Without `supportsFiles: true`, users can't attach files in a personal chat with the bot and the file accessor returns an empty collection. This setting doesn't grant Microsoft Graph permissions.
-
-For an agentic user, configure and obtain administrator consent for a Graph file permission on the agent blueprint. The agentic user retrieves file content with its own identity. For more information, see [inheritable permissions](/entra/agent-id/concept-inheritable-permissions).
 
 ### Receive files in personal chat
 
@@ -392,7 +400,7 @@ Key APIs and values:
 
 ::: zone-end
 
-For a bot, the activity contains a short-lived, pre-authorized `downloadUrl`. For an agentic user, Teams SDK uses the attachment `ContentUrl` and the agentic user's identity to retrieve the file through Microsoft Graph. The same file-read APIs apply to both routes.
+For an agentic user, Teams SDK uses the attachment `ContentUrl` and the agentic user's identity to retrieve the file through Microsoft Graph. For a bot, the SDK uses the short-lived, pre-authorized `downloadUrl` supplied in the activity. The file-read APIs shown in this section apply to both routes.
 
 ### Access the raw file attachment
 
@@ -1054,14 +1062,16 @@ For multiple standalone images, add each attachment and select `List`, `Carousel
 
 Handle known SDK file errors separately from transport and service failures:
 
+For agentic users, handle credential and Graph access errors first because file retrieval depends on the agentic identity and consented blueprint permissions. The expired URL error applies to the bot path that uses a pre-authorized download URL.
+
 ::: zone pivot="teams-sdk-csharp"
 
 | Status code | Error code | Description | Developer action |
 | --- | --- | --- | --- |
-| Not applicable | `FileUrlExpiredException` | The pre-authorized file URL expired before retrieval or re-read. | Ask the user to attach the file again. Download once and reuse `DownloadedFile`. |
 | Not applicable | `FileCredentialException` | No Graph credential is available for agentic-user file retrieval. | Verify blueprint permissions, administrator consent, and credential configuration. |
 | HTTP 401 | `FileAccessException` | Microsoft Graph rejected the token used to retrieve the file. | Refresh or correct the token and verify the selected actor. |
 | HTTP 403 | `FileAccessException` | The identity lacks consent or access to the requested item. | Verify consent, sharing, blueprint permissions, and item access. |
+| Not applicable | `FileUrlExpiredException` | The bot's pre-authorized file URL expired before retrieval or re-read. | Ask the user to attach the file again. Download once and reuse `DownloadedFile`. |
 | Not applicable | `FileScopeNotSupportedException` | The high-level file API received an unsupported conversation scope. | Use personal chat or retrieve the stored file through Microsoft Graph. |
 | Not applicable | `FileException` | A known SDK file operation failed for another reason. | Show a general user message and log sanitized diagnostics. |
 | HTTP 5xx | Transport or service error | Microsoft Graph or storage service couldn't complete the request. | Retry according to service guidance and preserve the original exception. |
@@ -1074,12 +1084,6 @@ try
     DownloadedFile downloaded =
         await file.DownloadAsync(cancellationToken);
 }
-catch (FileUrlExpiredException)
-{
-    await context.ReplyAsync(
-        "That file link expired. Attach the file again.",
-        cancellationToken);
-}
 catch (FileCredentialException)
 {
     await context.ReplyAsync(
@@ -1090,6 +1094,12 @@ catch (FileAccessException error)
 {
     await context.ReplyAsync(
         $"The storage service denied access ({error.Status}).",
+        cancellationToken);
+}
+catch (FileUrlExpiredException)
+{
+    await context.ReplyAsync(
+        "That file link expired. Attach the file again.",
         cancellationToken);
 }
 catch (FileScopeNotSupportedException)
@@ -1108,9 +1118,9 @@ catch (FileException)
 
 Key types and values:
 
-* `FileUrlExpiredException`: Handle expired short-lived file download URLs.
 * `FileCredentialException`: Handle missing agentic-user Graph credential configuration.
 * `FileAccessException.Status`: Distinguish rejected tokens from denied access.
+* `FileUrlExpiredException`: Handle expired bot download URLs.
 * `FileScopeNotSupportedException`: Handle unsupported group or channel retrieval.
 * `FileException`: Provide fallback handling for known SDK failures.
 
@@ -1120,9 +1130,9 @@ Key types and values:
 
 | Status code | Error code | Description | Developer action |
 | --- | --- | --- | --- |
-| Not applicable | `FileUrlExpiredError` | The pre-authorized file URL expired before retrieval or re-read. | Ask the user to attach the file again. Download once and reuse the downloaded file. |
 | Not applicable | `FileCredentialError` | No Graph credential is available for agentic-user file retrieval. | Verify blueprint permissions, administrator consent, and credential configuration. |
 | HTTP 401 or 403 | `FileAccessError` | Microsoft Graph rejected the token or denied item access. | Inspect `status`, then verify the token, consent, sharing, and item access. |
+| Not applicable | `FileUrlExpiredError` | The bot's pre-authorized file URL expired before retrieval or re-read. | Ask the user to attach the file again. Download once and reuse the downloaded file. |
 | Not applicable | `FileScopeNotSupportedError` | The high-level API received an unsupported conversation scope. | Use personal chat or retrieve the stored file through Microsoft Graph. |
 | Not applicable | `FileError` | A known SDK file operation failed for another reason. | Show a general user message and log sanitized diagnostics. |
 | HTTP 5xx | Transport or service error | Microsoft Graph or storage couldn't complete the request. | Retry according to service guidance and preserve the original error. |
@@ -1131,12 +1141,12 @@ Key types and values:
 try {
   const downloaded = await file.download();
 } catch (error) {
-  if (error instanceof FileUrlExpiredError) {
-    await send('That file link expired. Attach the file again.');
-  } else if (error instanceof FileCredentialError) {
+  if (error instanceof FileCredentialError) {
     await send("The agent isn't configured to access this file.");
   } else if (error instanceof FileAccessError) {
     await send(`The storage service denied access (${error.status}).`);
+  } else if (error instanceof FileUrlExpiredError) {
+    await send('That file link expired. Attach the file again.');
   } else if (error instanceof FileScopeNotSupportedError) {
     await send("File download isn't supported in this conversation.");
   } else if (error instanceof FileError) {
@@ -1149,9 +1159,9 @@ try {
 
 Key types and values:
 
-* `FileUrlExpiredError`: Handle expired short-lived file download URLs.
 * `FileCredentialError`: Handle missing agentic-user Graph credentials.
 * `FileAccessError.status`: Distinguish rejected tokens from denied access.
+* `FileUrlExpiredError`: Handle expired bot download URLs.
 * `FileScopeNotSupportedError`: Handle unsupported conversation scopes.
 * `FileError`: Provide fallback handling for known SDK failures.
 
@@ -1161,9 +1171,9 @@ Key types and values:
 
 | Status code | Error code | Description | Developer action |
 | --- | --- | --- | --- |
-| Not applicable | `FileUrlExpiredError` | The pre-authorized file URL expired before retrieval or re-read. | Ask the user to attach the file again. Download once and reuse the downloaded file. |
 | Not applicable | `FileCredentialError` | No Graph credential is available for agentic-user file retrieval. | Verify blueprint permissions, administrator consent, and credential configuration. |
 | HTTP 401 or 403 | `FileAccessError` | Microsoft Graph rejected the token or denied item access. | Inspect `status`, then verify the token, consent, sharing, and item access. |
+| Not applicable | `FileUrlExpiredError` | The bot's pre-authorized file URL expired before retrieval or re-read. | Ask the user to attach the file again. Download once and reuse the downloaded file. |
 | Not applicable | `FileScopeNotSupportedError` | The high-level API received an unsupported conversation scope. | Use personal chat or retrieve the stored file through Microsoft Graph. |
 | Not applicable | `FileError` | A known SDK file operation failed for another reason. | Show a general user message and log sanitized diagnostics. |
 | HTTP 5xx | Transport or service error | Microsoft Graph or storage couldn't complete the request. | Retry according to service guidance and preserve the original error. |
@@ -1171,14 +1181,14 @@ Key types and values:
 ```python
 try:
     downloaded = await file.download()
-except FileUrlExpiredError:
-    await ctx.reply("That file link expired. Attach the file again.")
 except FileCredentialError:
     await ctx.reply("The agent isn't configured to access this file.")
 except FileAccessError as error:
     await ctx.reply(
         f"The storage service denied access ({error.status})."
     )
+except FileUrlExpiredError:
+    await ctx.reply("That file link expired. Attach the file again.")
 except FileScopeNotSupportedError:
     await ctx.reply(
         "File download isn't supported in this conversation."
@@ -1189,9 +1199,9 @@ except FileError:
 
 Key types and values:
 
-* `FileUrlExpiredError`: Handle expired short-lived file download URLs.
 * `FileCredentialError`: Handle missing agentic-user Graph credentials.
 * `FileAccessError.status`: Distinguish rejected tokens from denied access.
+* `FileUrlExpiredError`: Handle expired bot download URLs.
 * `FileScopeNotSupportedError`: Handle unsupported conversation scopes.
 * `FileError`: Provide fallback handling for known SDK failures.
 
