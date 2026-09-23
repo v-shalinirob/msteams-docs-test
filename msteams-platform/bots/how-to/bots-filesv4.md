@@ -120,9 +120,7 @@ teamsApp.OnMessage(async (context, cancellationToken) =>
 
 Key APIs and values:
 
-* `OnMessage`: Register the handler that processes incoming message activities.
 * `context.Files.ListAsync`: Return file metadata without downloading file bytes.
-* `cancellationToken`: Propagate cancellation through listing and reply operations.
 * `file.Name`: Read the uploader-provided name for display only.
 
 `ListAsync()` preserves attachment order. It returns an empty collection for activities without supported files and skips malformed file entries. Use `FirstAsync()` when your handler expects one file:
