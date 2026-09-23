@@ -212,7 +212,7 @@ Key APIs and values:
 * `downloaded.Bytes`: Reuse buffered bytes for binary processing.
 * `SaveAsAsync`: Save buffered bytes without fetching the file again.
 
-For a traditional bot, the activity contains a short-lived, pre-authorized `downloadUrl`. For an agentic user, the SDK uses the attachment `ContentUrl` and the agentic user's identity to retrieve the file through Microsoft Graph. The same file-read APIs apply to both routes.
+For a traditional bot, the activity contains a short-lived, pre-authorized `downloadUrl`. For an agentic user, Teams SDK uses the attachment `ContentUrl` and the agentic user's identity to retrieve the file through Microsoft Graph. The same file-read APIs apply to both routes.
 
 ### Access the raw file attachment
 
