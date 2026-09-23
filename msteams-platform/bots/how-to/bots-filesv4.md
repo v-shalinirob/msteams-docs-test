@@ -1,13 +1,14 @@
 ---
 title: Send and receive files and inline images
 description: Learn how agents send and receive files and inline images in Microsoft Teams using Teams SDK and Microsoft Graph.
-ms.date: 09/17/2026
+ms.date: 09/23/2026
 author: nickwalkmsft
 ms.author: nickwalk
 ms.reviewer: nickwalk
 ms.localizationpriority: medium
 ms.topic: how-to
 ms.owner: angovil
+zone_pivot_groups: teams-sdk-languages
 ---
 # Send and receive files and inline images
 
@@ -43,21 +44,21 @@ Choose an approach based on the content and conversation scope:
 
 | Requirement | Recommended approach |
 | --- | --- |
-| Receive a document in a personal chat | Teams SDK `context.Files` |
-| Receive an image pasted into a message | Inspect `Activity.Attachments` |
+| Receive a document in a personal chat | Teams SDK file accessor |
+| Receive an image pasted into a message | Inspect the activity attachments |
 | Send a document in a personal chat | Teams SDK file consent |
 | Send or retrieve stored files in other scopes | Microsoft Graph |
 | Send an image beside message text | Image attachment |
 | Position an image within formatted text | Base64 image in HTML/XML content |
 | Add an image to interactive content | Adaptive Card `Image` element |
 
-`Activity.Attachments` contains non-text message content, including files, inline images, Adaptive Cards, mentions, link previews, and HTML layout information. The `context.Files` accessor filters this collection and exposes supported document files as lazy `IncomingFile` handles.
+The activity attachment collection contains non-text message content, including files, inline images, Adaptive Cards, mentions, link previews, and HTML layout information. The Teams SDK file accessor filters this collection and exposes supported document files as lazy incoming-file handles.
 
 The following table summarizes scope and permission requirements:
 
 | Operation | Personal chat | Group chat | Channel | Requirement |
 | --- | --- | --- | --- | --- |
-| Receive files with `context.Files` | Supported | Not explicitly supported | Not explicitly supported | Traditional bots use a pre-authorized URL. Agentic users require Graph file permissions. |
+| Receive files with the Teams SDK file accessor | Supported | Not explicitly supported | Not explicitly supported | Traditional bots use a pre-authorized URL. Agentic users require Graph file permissions. |
 | Send files with file consent | Supported | Not supported | Not supported | Set `supportsFiles` to `true` for traditional bots. |
 | Send or retrieve files with Graph | Supported | Supported | Supported | Configure the appropriate OneDrive or SharePoint permissions. |
 | Receive inline images | Supported through activity attachments | Use activity attachments | Use activity attachments | Use the app's authenticated HTTP client. |
@@ -87,13 +88,15 @@ Key values:
 * `scopes`: Add `personal` to enable one-to-one file interactions.
 * `supportsFiles`: Set `true` to expose the file attachment control.
 
-Without `supportsFiles: true`, users can't attach files in a personal chat with the bot and `context.Files.ListAsync()` returns an empty collection. This setting doesn't grant Microsoft Graph permissions.
+Without `supportsFiles: true`, users can't attach files in a personal chat with the bot and the file accessor returns an empty collection. This setting doesn't grant Microsoft Graph permissions.
 
 For an agentic user, configure and obtain administrator consent for a Graph file permission on the agent blueprint. The agentic user retrieves file content with its own identity. For more information, see [inheritable permissions](/entra/agent-id/concept-inheritable-permissions).
 
 ### Receive files in personal chat
 
-When a user attaches a document in a personal chat, Teams stores it in OneDrive or SharePoint. The message activity contains file metadata, and `context.Files` provides lazy access to the file bytes.
+When a user attaches a document in a personal chat, Teams stores it in OneDrive or SharePoint. The message activity contains file metadata, and the Teams SDK file accessor provides lazy access to the file bytes.
+
+::: zone pivot="teams-sdk-csharp"
 
 Use `ListAsync()` to access every supported file attached to the current message:
 
@@ -142,22 +145,104 @@ Key APIs and values:
 * `FirstAsync`: Return the first supported file or `null`.
 * `file.Name`: Display the received file's uploader-provided name.
 
-An `IncomingFile` includes:
+::: zone-end
 
-* `UniqueId`: OneDrive or SharePoint drive-item ID when available.
-* `Name`: Uploader-provided filename, including its file extension.
-* `Extension`: Platform-provided extension without the leading period.
-* `ContentType`: MIME type when provided by the source.
-* `Scope`: Conversation scope where the file was received.
-* `Source`: SDK source that identified the incoming file.
-* `ContentUrl`: Browsable storage URL, not necessarily a download URL.
-* `Raw`: Original attachment metadata for protocol-level diagnostics.
+::: zone pivot="teams-sdk-typescript"
+
+Use `list()` to access every supported file attached to the current message:
+
+```typescript
+app.on('message', async ({ files, send }) => {
+  const attached = await files.list();
+
+  if (attached.length === 0) {
+    await send('Attach a file and I will read it.');
+    return;
+  }
+
+  const names = attached.map((file) => file.name).join(', ');
+  await send(`You sent ${attached.length} file(s): ${names}`);
+});
+```
+
+Key APIs and values:
+
+* `files.list`: Return file metadata without downloading file bytes.
+* `file.name`: Read the uploader-provided name for display only.
+
+`list()` preserves attachment order. It returns an empty array for activities without supported files and skips malformed file entries. Use `first()` when your handler expects one file:
+
+```typescript
+const file = await files.first();
+
+if (file) {
+  await send(`Reading ${file.name}...`);
+}
+```
+
+Key APIs and values:
+
+* `first`: Return the first supported file or `undefined`.
+* `file.name`: Display the received file's uploader-provided name.
+
+::: zone-end
+
+::: zone pivot="teams-sdk-python"
+
+Use `list()` to access every supported file attached to the current message:
+
+```python
+@app.on_message
+async def handle_message(ctx: ActivityContext[MessageActivity]) -> None:
+    attached = await ctx.files.list()
+
+    if not attached:
+        await ctx.reply("Attach a file and I will read it.")
+        return
+
+    names = ", ".join(file.name for file in attached)
+    await ctx.reply(f"You sent {len(attached)} file(s): {names}")
+```
+
+Key APIs and values:
+
+* `ctx.files.list`: Return file metadata without downloading file bytes.
+* `file.name`: Read the uploader-provided name for display only.
+
+`list()` preserves attachment order. It returns an empty list for activities without supported files and skips malformed file entries. Use `first()` when your handler expects one file:
+
+```python
+file = await ctx.files.first()
+
+if file:
+    await ctx.reply(f"Reading {file.name}...")
+```
+
+Key APIs and values:
+
+* `first`: Return the first supported file or `None`.
+* `file.name`: Display the received file's uploader-provided name.
+
+::: zone-end
+
+An incoming-file handle includes:
+
+* **Unique ID**: OneDrive or SharePoint drive-item ID when available.
+* **Name**: Uploader-provided filename, including its file extension.
+* **Extension**: Platform-provided extension without the leading period.
+* **Content type**: MIME type when provided by the source.
+* **Scope**: Conversation scope where the file was received.
+* **Source**: SDK source that identified the incoming file.
+* **Content URL**: Browsable storage URL, not necessarily a download URL.
+* **Raw attachment**: Original metadata for protocol-level diagnostics.
 
 > [!CAUTION]
 >
 > Treat `Name` as untrusted input. Before writing a file, replace it with a safe application-generated name or sanitize it and verify that the resolved destination remains inside an application-controlled directory.
 
 ### Read a received file
+
+::: zone pivot="teams-sdk-csharp"
 
 Use `DownloadAsync()` to download a file into a reusable in-memory copy:
 
@@ -212,9 +297,106 @@ Key APIs and values:
 * `downloaded.Bytes`: Reuse buffered bytes for binary processing.
 * `SaveAsAsync`: Save buffered bytes without fetching the file again.
 
+::: zone-end
+
+::: zone pivot="teams-sdk-typescript"
+
+Use `download()` to download a file into a reusable in-memory copy:
+
+```typescript
+const file = await files.first();
+
+if (file) {
+  const downloaded = await file.download();
+  await send(
+    `Downloaded ${downloaded.filename} ` +
+    `(${downloaded.bytes.length} bytes, ${downloaded.contentType}).`
+  );
+}
+```
+
+Key APIs and values:
+
+* `download`: Fetch and buffer one reusable copy of bytes.
+* `downloaded.bytes`: Access the downloaded file's binary content.
+* `downloaded.contentType`: Use the resolved MIME type for processing.
+* `downloaded.filename`: Use the resolved name for display purposes.
+
+Other read options include:
+
+* `text()`: Download and decode text as UTF-8 by default.
+* `stream()`: Process large files without buffering them completely.
+* `saveAs(path)`: Stream bytes directly to a safe local path.
+
+An incoming file doesn't cache bytes. Download once and reuse the downloaded file when you need the same content more than once:
+
+```typescript
+const downloaded = await file.download();
+const text = downloaded.text();
+const buffer = downloaded.arrayBuffer();
+
+await downloaded.saveAs('./downloads/copy.bin');
+```
+
+Key APIs and values:
+
+* `downloaded.text()`: Decode the buffered copy without another download.
+* `downloaded.arrayBuffer()`: Reuse buffered bytes for binary processing.
+* `saveAs`: Save buffered bytes without fetching the file again.
+
+::: zone-end
+
+::: zone pivot="teams-sdk-python"
+
+Use `download()` to download a file into a reusable in-memory copy:
+
+```python
+file = await ctx.files.first()
+
+if file:
+    downloaded = await file.download()
+    await ctx.reply(
+        f"Downloaded {downloaded.filename} "
+        f"({len(downloaded.bytes)} bytes, {downloaded.content_type})."
+    )
+```
+
+Key APIs and values:
+
+* `download`: Fetch and buffer one reusable copy of bytes.
+* `downloaded.bytes`: Access the downloaded file's binary content.
+* `downloaded.content_type`: Use the resolved MIME type for processing.
+* `downloaded.filename`: Use the resolved name for display purposes.
+
+Other read options include:
+
+* `text()`: Download and decode text as UTF-8 by default.
+* `stream()`: Process large files without buffering them completely.
+* `save_as(path)`: Stream bytes directly to a safe local path.
+
+An incoming file doesn't cache bytes. Download once and reuse the downloaded file when you need the same content more than once:
+
+```python
+downloaded = await file.download()
+text = downloaded.text()
+data = downloaded.bytes
+
+await downloaded.save_as("./downloads/copy.bin")
+```
+
+Key APIs and values:
+
+* `downloaded.text()`: Decode the buffered copy without another download.
+* `downloaded.bytes`: Reuse buffered bytes for binary processing.
+* `save_as`: Save buffered bytes without fetching the file again.
+
+::: zone-end
+
 For a traditional bot, the activity contains a short-lived, pre-authorized `downloadUrl`. For an agentic user, Teams SDK uses the attachment `ContentUrl` and the agentic user's identity to retrieve the file through Microsoft Graph. The same file-read APIs apply to both routes.
 
 ### Access the raw file attachment
+
+::: zone pivot="teams-sdk-csharp"
 
 Use `IncomingFile.Raw` only when you need the original protocol payload:
 
@@ -238,7 +420,46 @@ Key APIs and values:
 * `file.Raw`: Access original metadata for diagnostics or troubleshooting.
 * `JsonSerializer.Serialize`: Convert metadata to inspect its protocol shape.
 
-Remove sensitive URLs and identifiers before logging raw attachment data. Inline images, cards, mentions, link previews, HTML attachments, and malformed file entries aren't returned through `context.Files`; access them through `context.Activity.Attachments`.
+::: zone-end
+
+::: zone pivot="teams-sdk-typescript"
+
+Use `IIncomingFile.raw` only when you need the original protocol payload:
+
+```typescript
+const file = await files.first();
+
+if (file) {
+  log.debug('Raw file attachment', file.raw);
+}
+```
+
+Key APIs and values:
+
+* `file.raw`: Access original metadata for diagnostics or troubleshooting.
+* `log.debug`: Record sanitized metadata for protocol diagnostics.
+
+::: zone-end
+
+::: zone pivot="teams-sdk-python"
+
+Use `IncomingFile.raw` only when you need the original protocol payload:
+
+```python
+file = await ctx.files.first()
+
+if file:
+    ctx.logger.debug("Raw file attachment: %s", file.raw)
+```
+
+Key APIs and values:
+
+* `file.raw`: Access original metadata for diagnostics or troubleshooting.
+* `ctx.logger.debug`: Record sanitized metadata for protocol diagnostics.
+
+::: zone-end
+
+Remove sensitive URLs and identifiers before logging raw attachment data. The file accessor doesn't return inline images, cards, mentions, link previews, HTML attachments, or malformed file entries. Access these items through the activity's attachment collection.
 
 ## Send files
 
@@ -296,6 +517,40 @@ When the user accepts, Teams sends `fileConsent/invoke` with `action` set to `ac
 
 Use the upload URL to transfer the file bytes:
 
+::: zone pivot="teams-sdk-csharp"
+
+```csharp
+async Task UploadToOneDrive(
+    string url,
+    byte[] content,
+    CancellationToken cancellationToken)
+{
+    using var request = new HttpRequestMessage(HttpMethod.Put, url);
+    request.Content = new ByteArrayContent(content);
+    request.Content.Headers.ContentType =
+        new MediaTypeHeaderValue("application/octet-stream");
+    request.Content.Headers.ContentLength = content.Length;
+    request.Content.Headers.ContentRange =
+        new ContentRangeHeaderValue(0, content.Length - 1, content.Length);
+
+    using HttpResponseMessage response =
+        await httpClient.SendAsync(request, cancellationToken);
+    response.EnsureSuccessStatusCode();
+}
+```
+
+Key parameters and values:
+
+* `url`: Use the `UploadInfo.UploadUrl` returned after acceptance.
+* `content`: Provide the exact bytes associated with consent.
+* `ContentType`: Set `application/octet-stream` for binary transfer.
+* `ContentLength`: Set the exact number of uploaded bytes.
+* `ContentRange`: Describe the uploaded byte range and total.
+
+::: zone-end
+
+::: zone pivot="teams-sdk-typescript"
+
 ```typescript
 async function uploadToOneDrive(url: string, content: Buffer): Promise<void> {
   const fileSize = content.length;
@@ -320,6 +575,40 @@ Key parameters and values:
 * `Content-Type`: Set `application/octet-stream` for binary file transfer.
 * `Content-Length`: Set the decimal length of uploaded bytes.
 * `Content-Range`: Describe the uploaded byte range and total.
+
+::: zone-end
+
+::: zone pivot="teams-sdk-python"
+
+```python
+async def upload_to_onedrive(url: str, content: bytes) -> None:
+    file_size = len(content)
+    client = Client(
+        ClientOptions(
+            headers={
+                "Content-Type": "application/octet-stream",
+                "Content-Length": str(file_size),
+                "Content-Range": f"bytes 0-{file_size - 1}/{file_size}",
+            }
+        )
+    )
+    response = await client.put(url, content=content)
+
+    if response.status_code not in [200, 201]:
+        raise Exception(
+            f"Upload failed with status {response.status_code}"
+        )
+```
+
+Key parameters and values:
+
+* `url`: Use the `upload_info.upload_url` returned after acceptance.
+* `content`: Provide the exact bytes associated with consent.
+* `Content-Type`: Set `application/octet-stream` for binary transfer.
+* `Content-Length`: Set the exact number of uploaded bytes.
+* `Content-Range`: Describe the uploaded byte range and total.
+
+::: zone-end
 
 After a successful upload, send a file information attachment:
 
@@ -361,9 +650,11 @@ For more information, see [send chat message file attachments](/graph/api/chatme
 
 ### Receive inline images
 
-An inline image isn't exposed through `context.Files`. An inbound message commonly includes an `image/*` attachment with the authenticated download URL and a `text/html` attachment that preserves the image position.
+An inline image isn't exposed through the Teams SDK file accessor. An inbound message commonly includes an `image/*` attachment with the authenticated download URL and a `text/html` attachment that preserves the image position.
 
 Use the `image/*` attachment as the canonical source. Don't use the `<img src>` URL from the HTML attachment to download the image.
+
+::: zone pivot="teams-sdk-csharp"
 
 ```csharp
 using Microsoft.Extensions.DependencyInjection;
@@ -414,6 +705,73 @@ Key APIs and values:
 * `ResponseHeadersRead`: Begin processing without buffering response content first.
 * `EnsureSuccessStatusCode`: Fail explicitly when image retrieval is unsuccessful.
 
+::: zone-end
+
+::: zone pivot="teams-sdk-typescript"
+
+```typescript
+app.on('message', async ({ activity }) => {
+  const image = activity.attachments?.find(
+    (attachment) =>
+      attachment.contentType?.startsWith('image/') &&
+      attachment.contentUrl
+  );
+
+  if (image?.contentUrl) {
+    const response = await app.api.http.get<ArrayBuffer>(
+      image.contentUrl,
+      { responseType: 'arraybuffer' }
+    );
+    const bytes = Buffer.from(response.data);
+
+    // Process the image bytes.
+  }
+});
+```
+
+Key APIs and values:
+
+* `activity.attachments`: Search all inbound message attachments.
+* `contentType`: Match an `image/*` MIME type.
+* `contentUrl`: Use the canonical authenticated image download URL.
+* `app.api.http`: Download bytes with the SDK's authenticated client.
+* `responseType`: Set `arraybuffer` to receive binary image content.
+
+::: zone-end
+
+::: zone pivot="teams-sdk-python"
+
+```python
+@app.on_message
+async def handle_message(ctx: ActivityContext[MessageActivity]) -> None:
+    image = next(
+        (
+            attachment
+            for attachment in (ctx.activity.attachments or [])
+            if attachment.content_type
+            and attachment.content_type.startswith("image/")
+            and attachment.content_url
+        ),
+        None,
+    )
+
+    if image and image.content_url:
+        response = await app.api.http.get(image.content_url)
+        image_bytes = response.content
+
+        # Process the image bytes.
+```
+
+Key APIs and values:
+
+* `ctx.activity.attachments`: Search all inbound message attachments.
+* `content_type`: Match an `image/*` MIME type.
+* `content_url`: Use the canonical authenticated image download URL.
+* `app.api.http`: Download bytes with the SDK's authenticated client.
+* `response.content`: Access the downloaded binary image content.
+
+::: zone-end
+
 Process the bytes directly when possible. Convert them to base64 only when a downstream API requires it, and preserve the attachment's actual MIME type.
 
 ### Send an inline image
@@ -436,6 +794,8 @@ Teams supports inline images with the following limits:
 
 #### Send an image from a hosted URL
 
+::: zone pivot="teams-sdk-csharp"
+
 ```csharp
 TeamsAttachment image = TeamsAttachment.CreateBuilder()
     .WithContentType(new AttachmentContentType("image/png"))
@@ -457,9 +817,62 @@ Key properties and values:
 * `Name`: Add an optional display name for the image.
 * `AddAttachment`: Attach the image to the outgoing message.
 
+::: zone-end
+
+::: zone pivot="teams-sdk-typescript"
+
+```typescript
+app.on('message', async ({ send }) => {
+  await send(
+    new MessageActivityInput('Here is the latest chart:')
+      .addAttachments({
+        contentType: 'image/png',
+        contentUrl: 'https://contoso.com/charts/weekly.png',
+        name: 'weekly.png'
+      })
+  );
+});
+```
+
+Key properties and values:
+
+* `contentType`: Set the MIME type matching hosted image bytes.
+* `contentUrl`: Set a publicly reachable HTTPS image URL.
+* `name`: Add an optional display name for the image.
+* `addAttachments`: Attach the image to the outgoing message.
+
+::: zone-end
+
+::: zone pivot="teams-sdk-python"
+
+```python
+@app.on_message
+async def handle_message(ctx: ActivityContext[MessageActivity]) -> None:
+    await ctx.send(
+        MessageActivityInput(text="Here is the latest chart:").add_attachments(
+            Attachment(
+                content_type="image/png",
+                content_url="https://contoso.com/charts/weekly.png",
+                name="weekly.png",
+            )
+        )
+    )
+```
+
+Key properties and values:
+
+* `content_type`: Set the MIME type matching hosted image bytes.
+* `content_url`: Set a publicly reachable HTTPS image URL.
+* `name`: Add an optional display name for the image.
+* `add_attachments`: Attach the image to the outgoing message.
+
+::: zone-end
+
 The URL must be reachable by the Teams client without agent credentials. Prefer this approach for images that aren't small.
 
 #### Send image bytes as base64
+
+::: zone pivot="teams-sdk-csharp"
 
 ```csharp
 byte[] bytes = await File.ReadAllBytesAsync(
@@ -489,11 +902,70 @@ Key properties and values:
 * `ContentUrl`: Wrap the complete data URI in `Uri`.
 * `Name`: Add an optional filename matching the image format.
 
+::: zone-end
+
+::: zone pivot="teams-sdk-typescript"
+
+```typescript
+app.on('message', async ({ send }) => {
+  const bytes = await readFile('./charts/weekly.png');
+
+  await send(
+    new MessageActivityInput('Here is the latest chart:')
+      .addAttachments({
+        contentType: 'image/png',
+        contentUrl: `data:image/png;base64,${bytes.toString('base64')}`,
+        name: 'weekly.png'
+      })
+  );
+});
+```
+
+Key properties and values:
+
+* `contentUrl`: Prefix base64 bytes with the matching MIME type.
+* `contentType`: Match the data URI and actual image format.
+* `bytes.toString('base64')`: Encode the image bytes for the data URI.
+* `name`: Add an optional filename matching the image format.
+
+::: zone-end
+
+::: zone pivot="teams-sdk-python"
+
+```python
+@app.on_message
+async def handle_message(ctx: ActivityContext[MessageActivity]) -> None:
+    encoded = b64encode(
+        Path("./charts/weekly.png").read_bytes()
+    ).decode("ascii")
+
+    await ctx.send(
+        MessageActivityInput(text="Here is the latest chart:").add_attachments(
+            Attachment(
+                content_type="image/png",
+                content_url=f"data:image/png;base64,{encoded}",
+                name="weekly.png",
+            )
+        )
+    )
+```
+
+Key properties and values:
+
+* `content_url`: Prefix base64 bytes with the matching MIME type.
+* `content_type`: Match the data URI and actual image format.
+* `b64encode`: Encode the image bytes for the data URI.
+* `name`: Add an optional filename matching the image format.
+
+::: zone-end
+
 Base64 increases payload size by approximately one-third. Use it for small generated images and use a hosted URL for larger images.
 
 #### Position an image within message text
 
 Use HTML/XML content to control image placement and dimensions:
+
+::: zone pivot="teams-sdk-csharp"
 
 ```csharp
 string encoded = Convert.ToBase64String(
@@ -517,6 +989,63 @@ Key properties and values:
 * `TextFormats.Xml`: Enable HTML elements within the message body.
 * `height` and `width`: Add optional dimensions to the image element.
 
+::: zone-end
+
+::: zone pivot="teams-sdk-typescript"
+
+```typescript
+app.on('message', async ({ send }) => {
+  const bytes = await readFile('./charts/weekly.png');
+  const encoded = bytes.toString('base64');
+
+  await send(
+    new MessageActivityInput(
+      `<div>Revenue is up.` +
+      `<img src="data:image/png;base64,${encoded}"/>` +
+      `Questions?</div>`
+    ).withTextFormat('xml')
+  );
+});
+```
+
+Key properties and values:
+
+* `src`: Use a base64 data URI for embedded images.
+* `withTextFormat('xml')`: Enable HTML elements in the message body.
+* `height` and `width`: Add optional dimensions to the image element.
+
+::: zone-end
+
+::: zone pivot="teams-sdk-python"
+
+```python
+@app.on_message
+async def send_positioned_image(
+    ctx: ActivityContext[MessageActivity],
+) -> None:
+    encoded = base64.b64encode(
+        Path("./charts/weekly.png").read_bytes()
+    ).decode("ascii")
+
+    await ctx.send(
+        MessageActivityInput(
+            text=(
+                '<div>Revenue is up.'
+                f'<img src="data:image/png;base64,{encoded}"/>'
+                'Questions?</div>'
+            )
+        ).with_text_format("xml")
+    )
+```
+
+Key properties and values:
+
+* `src`: Use a base64 data URI for embedded images.
+* `with_text_format("xml")`: Enable HTML elements in the message body.
+* `height` and `width`: Add optional dimensions to the image element.
+
+::: zone-end
+
 An HTTPS `<img src>` isn't uploaded or rewritten. Use a hosted image attachment instead. Every embedded image counts toward the message payload, and exceeding the limit can reject the entire message.
 
 For multiple standalone images, add each attachment and select `List`, `Carousel`, or `Grid` through `AttachmentLayoutType`. For an image within interactive content, use an Adaptive Card `Image` element. For streamed responses, add attachments only to the final message because intermediate typing activities don't carry attachments.
@@ -524,6 +1053,8 @@ For multiple standalone images, add each attachment and select `List`, `Carousel
 ## Handle errors
 
 Handle known SDK file errors separately from transport and service failures:
+
+::: zone pivot="teams-sdk-csharp"
 
 | Status code | Error code | Description | Developer action |
 | --- | --- | --- | --- |
@@ -583,6 +1114,89 @@ Key types and values:
 * `FileScopeNotSupportedException`: Handle unsupported group or channel retrieval.
 * `FileException`: Provide fallback handling for known SDK failures.
 
+::: zone-end
+
+::: zone pivot="teams-sdk-typescript"
+
+| Status code | Error code | Description | Developer action |
+| --- | --- | --- | --- |
+| Not applicable | `FileUrlExpiredError` | The pre-authorized file URL expired before retrieval or re-read. | Ask the user to attach the file again. Download once and reuse the downloaded file. |
+| Not applicable | `FileCredentialError` | No Graph credential is available for agentic-user file retrieval. | Verify blueprint permissions, administrator consent, and credential configuration. |
+| HTTP 401 or 403 | `FileAccessError` | Microsoft Graph rejected the token or denied item access. | Inspect `status`, then verify the token, consent, sharing, and item access. |
+| Not applicable | `FileScopeNotSupportedError` | The high-level API received an unsupported conversation scope. | Use personal chat or retrieve the stored file through Microsoft Graph. |
+| Not applicable | `FileError` | A known SDK file operation failed for another reason. | Show a general user message and log sanitized diagnostics. |
+| HTTP 5xx | Transport or service error | Microsoft Graph or storage couldn't complete the request. | Retry according to service guidance and preserve the original error. |
+
+```typescript
+try {
+  const downloaded = await file.download();
+} catch (error) {
+  if (error instanceof FileUrlExpiredError) {
+    await send('That file link expired. Attach the file again.');
+  } else if (error instanceof FileCredentialError) {
+    await send("The agent isn't configured to access this file.");
+  } else if (error instanceof FileAccessError) {
+    await send(`The storage service denied access (${error.status}).`);
+  } else if (error instanceof FileScopeNotSupportedError) {
+    await send("File download isn't supported in this conversation.");
+  } else if (error instanceof FileError) {
+    await send("The file couldn't be read.");
+  } else {
+    throw error;
+  }
+}
+```
+
+Key types and values:
+
+* `FileUrlExpiredError`: Handle expired short-lived file download URLs.
+* `FileCredentialError`: Handle missing agentic-user Graph credentials.
+* `FileAccessError.status`: Distinguish rejected tokens from denied access.
+* `FileScopeNotSupportedError`: Handle unsupported conversation scopes.
+* `FileError`: Provide fallback handling for known SDK failures.
+
+::: zone-end
+
+::: zone pivot="teams-sdk-python"
+
+| Status code | Error code | Description | Developer action |
+| --- | --- | --- | --- |
+| Not applicable | `FileUrlExpiredError` | The pre-authorized file URL expired before retrieval or re-read. | Ask the user to attach the file again. Download once and reuse the downloaded file. |
+| Not applicable | `FileCredentialError` | No Graph credential is available for agentic-user file retrieval. | Verify blueprint permissions, administrator consent, and credential configuration. |
+| HTTP 401 or 403 | `FileAccessError` | Microsoft Graph rejected the token or denied item access. | Inspect `status`, then verify the token, consent, sharing, and item access. |
+| Not applicable | `FileScopeNotSupportedError` | The high-level API received an unsupported conversation scope. | Use personal chat or retrieve the stored file through Microsoft Graph. |
+| Not applicable | `FileError` | A known SDK file operation failed for another reason. | Show a general user message and log sanitized diagnostics. |
+| HTTP 5xx | Transport or service error | Microsoft Graph or storage couldn't complete the request. | Retry according to service guidance and preserve the original error. |
+
+```python
+try:
+    downloaded = await file.download()
+except FileUrlExpiredError:
+    await ctx.reply("That file link expired. Attach the file again.")
+except FileCredentialError:
+    await ctx.reply("The agent isn't configured to access this file.")
+except FileAccessError as error:
+    await ctx.reply(
+        f"The storage service denied access ({error.status})."
+    )
+except FileScopeNotSupportedError:
+    await ctx.reply(
+        "File download isn't supported in this conversation."
+    )
+except FileError:
+    await ctx.reply("The file couldn't be read.")
+```
+
+Key types and values:
+
+* `FileUrlExpiredError`: Handle expired short-lived file download URLs.
+* `FileCredentialError`: Handle missing agentic-user Graph credentials.
+* `FileAccessError.status`: Distinguish rejected tokens from denied access.
+* `FileScopeNotSupportedError`: Handle unsupported conversation scopes.
+* `FileError`: Provide fallback handling for known SDK failures.
+
+::: zone-end
+
 ## Code sample
 
 The following sample placeholder is reserved for the end-to-end TypeScript implementation:
@@ -597,7 +1211,7 @@ The following sample placeholder is reserved for the end-to-end TypeScript imple
 * Acknowledge successful file receipt, upload, or image processing.
 * Explain why the agent requests file consent before sending a document.
 * Handle a declined consent request without repeatedly prompting the user.
-* Prefer `context.Files` over manually parsing received document attachments.
+* Prefer the Teams SDK file accessor over manually parsing received document attachments.
 * Download once and reuse `DownloadedFile` when processing content repeatedly.
 * Stream large files instead of buffering the complete file in memory.
 * Sanitize uploader-provided filenames and use application-controlled destinations.
