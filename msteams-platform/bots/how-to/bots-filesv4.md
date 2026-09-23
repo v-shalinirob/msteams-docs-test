@@ -58,8 +58,8 @@ The following table summarizes scope and permission requirements:
 
 | Operation | Personal chat | Group chat | Channel | Requirement |
 | --- | --- | --- | --- | --- |
-| Receive files with the Teams SDK file accessor | Supported | Not explicitly supported | Not explicitly supported | Traditional bots use a pre-authorized URL. Agentic users require Graph file permissions. |
-| Send files with file consent | Supported | Not supported | Not supported | Set `supportsFiles` to `true` for traditional bots. |
+| Receive files with the Teams SDK file accessor | Supported | Not explicitly supported | Not explicitly supported | Bots use a pre-authorized URL. Agentic users require Graph file permissions. |
+| Send files with file consent | Supported | Not supported | Not supported | Set `supportsFiles` to `true` for bots. |
 | Send or retrieve files with Graph | Supported | Supported | Supported | Configure the appropriate OneDrive or SharePoint permissions. |
 | Receive inline images | Supported through activity attachments | Use activity attachments | Use activity attachments | Use the app's authenticated HTTP client. |
 | Send inline images | Supported | Supported | Supported | No Graph permission or user sign-in is required. |
@@ -68,7 +68,7 @@ The following table summarizes scope and permission requirements:
 
 ### Configure file support
 
-For a traditional bot, set `supportsFiles` to `true` in the bot entry of the app manifest:
+For a bot, set `supportsFiles` to `true` in the bot entry of the app manifest:
 
 ```json
 {
@@ -392,7 +392,7 @@ Key APIs and values:
 
 ::: zone-end
 
-For a traditional bot, the activity contains a short-lived, pre-authorized `downloadUrl`. For an agentic user, Teams SDK uses the attachment `ContentUrl` and the agentic user's identity to retrieve the file through Microsoft Graph. The same file-read APIs apply to both routes.
+For a bot, the activity contains a short-lived, pre-authorized `downloadUrl`. For an agentic user, Teams SDK uses the attachment `ContentUrl` and the agentic user's identity to retrieve the file through Microsoft Graph. The same file-read APIs apply to both routes.
 
 ### Access the raw file attachment
 
