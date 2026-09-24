@@ -22,6 +22,8 @@ Use Teams SDK to receive files in personal chats, send files through file consen
 
 ## User experience
 
+Understand how users exchange documents and images with an agent so you can choose clear prompts, consent flows, and confirmations for each interaction.
+
 Users can:
 
 * Attach a document to a personal chat with an agent.
@@ -66,7 +68,11 @@ The following table summarizes scope and permission requirements:
 
 ## Receive files
 
+Receive document files that users attach to personal chats so your agent can inspect or process their content. Configure file access first, then use the Teams SDK file accessor to list and read each received file.
+
 ### Configure file support
+
+Configure file support so your agent or bot has the permissions and platform settings required to receive documents. Complete the setup for your app identity before implementing file handlers.
 
 #### Agentic user
 
@@ -250,6 +256,8 @@ An incoming-file handle includes:
 
 ### Read a received file
 
+Read a received file when your app needs its text or binary content for processing, storage, or analysis. Use the download method for a reusable in-memory copy, or select a streaming method for large files.
+
 ::: zone pivot="teams-sdk-csharp"
 
 Use `DownloadAsync()` to download a file into a reusable in-memory copy:
@@ -404,6 +412,8 @@ For an agentic user, Teams SDK uses the attachment `ContentUrl` and the agentic 
 
 ### Access the raw file attachment
 
+Access the raw attachment when you need protocol metadata that the typed file accessor doesn't expose, such as for diagnostics or troubleshooting. Inspect the raw payload only when necessary, and remove sensitive values before logging it.
+
 ::: zone pivot="teams-sdk-csharp"
 
 Use `IncomingFile.Raw` only when you need the original protocol payload:
@@ -471,9 +481,11 @@ Remove sensitive URLs and identifiers before logging raw attachment data. The fi
 
 ## Send files
 
+Send stored documents to users when your app must deliver generated reports, exports, or other downloadable content. Use file consent in personal chats, or use Microsoft Graph for stored-file scenarios across other conversation scopes.
+
 ### Send files in personal chat
 
-The file-consent workflow is available only in personal chats:
+Use the file-consent workflow to request permission before your app uploads a document to a user's OneDrive. Implement the following sequence for personal chats:
 
 1. Send a `FileConsentCard`.
 1. Receive a `fileConsent/invoke` activity.
@@ -646,6 +658,8 @@ For more information, see [send chat message file attachments](/graph/api/chatme
 
 ## Work with inline images
 
+Work with inline images when users or agents need visual content rendered directly in a conversation instead of as a stored document. Use authenticated activity attachments to receive images and image attachments or HTML/XML content to send them.
+
 ### Receive inline images
 
 An inline image isn't exposed through the Teams SDK file accessor. An inbound message commonly includes an `image/*` attachment with the authenticated download URL and a `text/html` attachment that preserves the image position.
@@ -776,6 +790,8 @@ Process the bytes directly when possible. Convert them to base64 only when a dow
 
 An outbound inline image uses an image MIME type in `ContentType` and either a reachable HTTPS URL or a base64 data URI in `ContentUrl`. Sending doesn't upload the image to OneDrive or SharePoint and requires no Graph permission or user sign-in.
 
+Choose a hosted URL for externally available images or base64 data for small images held by your app, then create the corresponding outgoing message attachment.
+
 Teams supports inline images with the following limits:
 
 | Limit | Value |
@@ -791,6 +807,8 @@ Teams supports inline images with the following limits:
 > An image outside the supported dimensions, size, or format can be accepted by the send API but fail to render in the Teams client.
 
 #### Send an image from a hosted URL
+
+Use a hosted URL when the image is already available through a public HTTPS endpoint or is too large to embed efficiently. Add the reachable URL and matching MIME type to an image attachment.
 
 ::: zone pivot="teams-sdk-csharp"
 
@@ -869,6 +887,8 @@ Key properties and values:
 The URL must be reachable by the Teams client without agent credentials. Prefer this approach for images that aren't small.
 
 #### Send image bytes as base64
+
+Use a base64 data URI when image bytes exist only in your app, such as for a generated icon, thumbnail, or chart. Encode the bytes, preserve the correct MIME type, and attach the resulting data URI to the message.
 
 ::: zone pivot="teams-sdk-csharp"
 
@@ -1207,6 +1227,8 @@ The following sample placeholder is reserved for the end-to-end TypeScript imple
 
 ## Design guidelines and best practices
 
+Apply these guidelines to create secure, predictable file and image experiences for users. Review them while designing handlers and before deploying your app.
+
 * Clearly tell users whether content appears as a stored file or an inline image.
 * Acknowledge successful file receipt, upload, or image processing.
 * Explain why the agent requests file consent before sending a document.
@@ -1226,6 +1248,8 @@ The following sample placeholder is reserved for the end-to-end TypeScript imple
 * Propagate cancellation and handle HTTP, credential, scope, and expiration failures.
 
 ## See also
+
+Use these resources to explore the Teams SDK file and image APIs, related messaging features, and authentication guidance.
 
 * [Teams SDK overview](/microsoftteams/platform/teams-sdk/why)
 * [File and Image Handling](https://microsoft.github.io/teams-sdk/csharp/in-depth-guides/file-handling/)
