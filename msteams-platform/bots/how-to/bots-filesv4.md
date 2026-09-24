@@ -725,7 +725,7 @@ Key APIs and values:
 app.on('message', async ({ activity }) => {
   const image = activity.attachments?.find(
     (attachment) =>
-      attachment.contentType?.startsWith('image/') &&
+      attachment.contentType?.toLowerCase().startsWith('image/')
       attachment.contentUrl
   );
 
@@ -761,7 +761,7 @@ async def handle_message(ctx: ActivityContext[MessageActivity]) -> None:
             attachment
             for attachment in (ctx.activity.attachments or [])
             if attachment.content_type
-            and attachment.content_type.startswith("image/")
+            attachment.content_type.lower().startswith("image/")
             and attachment.content_url
         ),
         None,
