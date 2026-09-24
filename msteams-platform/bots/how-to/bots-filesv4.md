@@ -540,11 +540,21 @@ Use the upload URL to transfer the file bytes:
 ::: zone pivot="teams-sdk-csharp"
 
 ```csharp
+using System.Net;
+using System.Net.Http.Headers;
+
 async Task UploadToOneDrive(
     string url,
     byte[] content,
     CancellationToken cancellationToken)
 {
+    if (content.Length == 0)
+    {
+        throw new ArgumentException(
+            "The file content must not be empty.",
+            nameof(content));
+    }
+
     using var request = new HttpRequestMessage(HttpMethod.Put, url);
     request.Content = new ByteArrayContent(content);
     request.Content.Headers.ContentType =
@@ -555,7 +565,13 @@ async Task UploadToOneDrive(
 
     using HttpResponseMessage response =
         await httpClient.SendAsync(request, cancellationToken);
-    response.EnsureSuccessStatusCode();
+
+    if (response.StatusCode is not HttpStatusCode.OK
+        and not HttpStatusCode.Created)
+    {
+        throw new HttpRequestException(
+            $"Upload failed with status {response.StatusCode}.");
+    }
 }
 ```
 
@@ -563,16 +579,25 @@ Key parameters and values:
 
 * `url`: Use the `UploadInfo.UploadUrl` returned after acceptance.
 * `content`: Provide the exact bytes associated with consent.
+* `content.Length`: Reject an empty upload before creating its byte range.
 * `ContentType`: Set `application/octet-stream` for binary transfer.
 * `ContentLength`: Set the exact number of uploaded bytes.
 * `ContentRange`: Describe the uploaded byte range and total.
+* `httpClient.SendAsync`: Send the HTTP `PUT` request to OneDrive.
+* `response.StatusCode`: Accept HTTP 200 or 201 and fail otherwise.
 
 ::: zone-end
 
 ::: zone pivot="teams-sdk-typescript"
 
 ```typescript
+import axios from 'axios';
+
 async function uploadToOneDrive(url: string, content: Buffer): Promise<void> {
+  if (content.length === 0) {
+    throw new Error('The file content must not be empty.');
+  }
+
   const fileSize = content.length;
   const response = await axios.put(url, content, {
     headers: {
@@ -592,31 +617,50 @@ Key parameters and values:
 
 * `url`: Use the `uploadInfo.uploadUrl` returned after acceptance.
 * `content`: Provide the exact bytes associated with consent.
+* `content.length`: Reject an empty upload before creating its byte range.
 * `Content-Type`: Set `application/octet-stream` for binary file transfer.
 * `Content-Length`: Set the decimal length of uploaded bytes.
 * `Content-Range`: Describe the uploaded byte range and total.
+* `axios.put`: Upload the bytes with an HTTP `PUT` request.
+* `response.status`: Accept HTTP 200 or 201 and fail on other responses.
 
 ::: zone-end
 
 ::: zone pivot="teams-sdk-python"
 
 ```python
+import httpx
+
 async def upload_to_onedrive(url: str, content: bytes) -> None:
-    app: App,
-    url: str,
-    content: bytes,
-    ) -> None:
     if not content:
-    raise ValueError("The file content must not be empty.")
+        raise ValueError("The file content must not be empty.")
+
+    file_size = len(content)
+    headers = {
+        "Content-Type": "application/octet-stream",
+        "Content-Length": str(file_size),
+        "Content-Range": f"bytes 0-{file_size - 1}/{file_size}",
+    }
+
+    async with httpx.AsyncClient() as client:
+        response = await client.put(url, content=content, headers=headers)
+
+    if response.status_code not in (200, 201):
+        raise RuntimeError(
+            f"Upload failed with status {response.status_code}"
+        )
 ```
 
 Key parameters and values:
 
 * `url`: Use the `upload_info.upload_url` returned after acceptance.
 * `content`: Provide the exact bytes associated with consent.
+* `if not content`: Reject an empty upload before creating its byte range.
 * `Content-Type`: Set `application/octet-stream` for binary transfer.
 * `Content-Length`: Set the exact number of uploaded bytes.
 * `Content-Range`: Describe the uploaded byte range and total.
+* `httpx.AsyncClient.put`: Upload the bytes with an HTTP `PUT` request.
+* `response.status_code`: Accept HTTP 200 or 201 and fail otherwise.
 
 ::: zone-end
 
@@ -725,7 +769,7 @@ Key APIs and values:
 app.on('message', async ({ activity }) => {
   const image = activity.attachments?.find(
     (attachment) =>
-      attachment.contentType?.toLowerCase().startsWith('image/')
+      attachment.contentType?.toLowerCase().startsWith('image/') &&
       attachment.contentUrl
   );
 
@@ -744,7 +788,7 @@ app.on('message', async ({ activity }) => {
 Key APIs and values:
 
 * `activity.attachments`: Search all inbound message attachments.
-* `contentType`: Match an `image/*` MIME type.
+* `contentType`: Match an `image/*` MIME type case-insensitively.
 * `contentUrl`: Use the canonical authenticated image download URL.
 * `app.api.http`: Download bytes with the SDK's authenticated client.
 * `responseType`: Set `arraybuffer` to receive binary image content.
@@ -761,7 +805,7 @@ async def handle_message(ctx: ActivityContext[MessageActivity]) -> None:
             attachment
             for attachment in (ctx.activity.attachments or [])
             if attachment.content_type
-            attachment.content_type.lower().startswith("image/")
+            and attachment.content_type.lower().startswith("image/")
             and attachment.content_url
         ),
         None,
@@ -777,7 +821,7 @@ async def handle_message(ctx: ActivityContext[MessageActivity]) -> None:
 Key APIs and values:
 
 * `ctx.activity.attachments`: Search all inbound message attachments.
-* `content_type`: Match an `image/*` MIME type.
+* `content_type`: Match an `image/*` MIME type case-insensitively.
 * `content_url`: Use the canonical authenticated image download URL.
 * `app.api.http`: Download bytes with the SDK's authenticated client.
 * `response.content`: Access the downloaded binary image content.
