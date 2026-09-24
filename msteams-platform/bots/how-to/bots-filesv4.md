@@ -1265,9 +1265,9 @@ Key types and values:
 
 The following sample placeholder is reserved for the end-to-end TypeScript implementation:
 
-| Sample name | Description | TypeScript |
+| Sample name | Description | TypeScript | C# | Python |
 | --- | --- | --- |
-| File and inline-image handling | Receive and send files and inline images with an agent. | Link to be added |
+| File and inline-image handling | Receive and send files and inline images with an agent. | Link to be added | Link to be added | Link to be added |
 
 ## Design guidelines and best practices
 
