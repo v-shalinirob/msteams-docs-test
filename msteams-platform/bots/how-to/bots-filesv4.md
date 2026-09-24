@@ -1261,14 +1261,6 @@ Key types and values:
 
 ::: zone-end
 
-## Code sample
-
-The following sample placeholder is reserved for the end-to-end TypeScript implementation:
-
-| Sample name | Description | TypeScript | C# | Python |
-| --- | --- | --- |
-| File and inline-image handling | Receive and send files and inline images with an agent. | Link to be added | Link to be added | Link to be added |
-
 ## Design guidelines and best practices
 
 Apply these guidelines to create secure, predictable file and image experiences for users. Review them while designing handlers and before deploying your app.
