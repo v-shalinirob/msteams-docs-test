@@ -60,7 +60,7 @@ The following table summarizes scope and permission requirements:
 | --- | --- | --- | --- | --- |
 | Receive files with the Teams SDK file accessor | Supported | Not explicitly supported | Not explicitly supported | Agentic users require Graph file permissions. Bots use a pre-authorized URL. |
 | Send files with file consent | Supported | Not supported | Not supported | Set `supportsFiles` to `true` for bots. |
-| Send or retrieve files with Graph | Supported | Supported | Supported | Configure the appropriate OneDrive or SharePoint permissions. |
+| Send or retrieve files with Graph | Supported | Supported | Supported | Configure Microsoft Graph permissions appropriate to the storage location, API, calling identity, and access model used by your app. Use the least-privileged permission documented for the selected OneDrive or SharePoint operation. |
 | Receive inline images | Supported through activity attachments | Use activity attachments | Use activity attachments | Use the app's authenticated HTTP client. |
 | Send inline images | Supported | Supported | Supported | No Graph permission or user sign-in is required. |
 
@@ -590,22 +590,12 @@ Key parameters and values:
 
 ```python
 async def upload_to_onedrive(url: str, content: bytes) -> None:
-    file_size = len(content)
-    client = Client(
-        ClientOptions(
-            headers={
-                "Content-Type": "application/octet-stream",
-                "Content-Length": str(file_size),
-                "Content-Range": f"bytes 0-{file_size - 1}/{file_size}",
-            }
-        )
-    )
-    response = await client.put(url, content=content)
-
-    if response.status_code not in [200, 201]:
-        raise Exception(
-            f"Upload failed with status {response.status_code}"
-        )
+    app: App,
+    url: str,
+    content: bytes,
+    ) -> None:
+    if not content:
+    raise ValueError("The file content must not be empty.")
 ```
 
 Key parameters and values:
