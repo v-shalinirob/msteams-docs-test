@@ -106,7 +106,7 @@ Key values:
 
 Without `supportsFiles: true`, users can't attach files in a personal chat with the bot and the file accessor returns an empty collection. This setting doesn't grant Microsoft Graph permissions.
 
-### Receive files in personal chat
+### Access received files and metadata
 
 When a user attaches a document in a personal chat, Teams stores it in OneDrive or SharePoint. The message activity contains file metadata, and the Teams SDK file accessor provides lazy access to the file bytes.
 
@@ -412,80 +412,102 @@ For an agentic user, Teams SDK uses the attachment `ContentUrl` and the agentic 
 
 ### Access the raw file attachment
 
-Access the raw attachment when you need protocol metadata that the typed file accessor doesn't expose, such as for diagnostics or troubleshooting. Inspect the raw payload only when necessary, and remove sensitive values before logging it.
+Access the raw attachment when you need protocol metadata that the typed file accessor doesn't expose, such as for diagnostics or troubleshooting. Inspect the raw payload only when necessary, and log only explicitly selected, non-sensitive fields.
 
 ::: zone pivot="teams-sdk-csharp"
 
-Use `IncomingFile.Raw` only when you need the original protocol payload:
+Use `IncomingFile.Raw` only when you need the original protocol payload. The following example logs the attachment name and content type instead of serializing the complete object:
 
 ```csharp
-using System.Text.Json;
-
 IncomingFile? file =
     await context.Files.FirstAsync(cancellationToken);
 
 if (file is not null)
 {
-    string wire = JsonSerializer.Serialize(file.Raw);
-    await context.ReplyAsync(
-        $"Raw attachment: {wire}",
-        cancellationToken);
+    logger.LogDebug(
+        "File attachment received. Name: {Name}; Content type: {ContentType}",
+        file.Raw.Name,
+        file.Raw.ContentType);
 }
 ```
 
 Key APIs and values:
 
 * `file.Raw`: Access original metadata for diagnostics or troubleshooting.
-* `JsonSerializer.Serialize`: Convert metadata to inspect its protocol shape.
+* `file.Raw.Name`: Log the display name only after validating its sensitivity.
+* `file.Raw.ContentType`: Log the attachment type without exposing its URLs.
+* `logger.LogDebug`: Record selected metadata instead of the complete payload.
 
 ::: zone-end
 
 ::: zone pivot="teams-sdk-typescript"
 
-Use `IIncomingFile.raw` only when you need the original protocol payload:
+Use `IIncomingFile.raw` only when you need the original protocol payload. The following example logs the attachment name and content type instead of the complete object:
 
 ```typescript
 const file = await files.first();
 
 if (file) {
-  log.debug('Raw file attachment', file.raw);
+  log.debug('File attachment received', {
+    name: file.raw.name,
+    contentType: file.raw.contentType
+  });
 }
 ```
 
 Key APIs and values:
 
 * `file.raw`: Access original metadata for diagnostics or troubleshooting.
-* `log.debug`: Record sanitized metadata for protocol diagnostics.
+* `file.raw.name`: Log the display name only after validating its sensitivity.
+* `file.raw.contentType`: Log the attachment type without exposing its URLs.
+* `log.debug`: Record selected metadata instead of the complete payload.
 
 ::: zone-end
 
 ::: zone pivot="teams-sdk-python"
 
-Use `IncomingFile.raw` only when you need the original protocol payload:
+Use `IncomingFile.raw` only when you need the original protocol payload. The following example logs the attachment name and content type instead of the complete object:
 
 ```python
 file = await ctx.files.first()
 
 if file:
-    ctx.logger.debug("Raw file attachment: %s", file.raw)
+    ctx.logger.debug(
+        "File attachment received. Name: %s; Content type: %s",
+        file.raw.name,
+        file.raw.content_type,
+    )
 ```
 
 Key APIs and values:
 
 * `file.raw`: Access original metadata for diagnostics or troubleshooting.
-* `ctx.logger.debug`: Record sanitized metadata for protocol diagnostics.
+* `file.raw.name`: Log the display name only after validating its sensitivity.
+* `file.raw.content_type`: Log the attachment type without exposing its URLs.
+* `ctx.logger.debug`: Record selected metadata instead of the complete payload.
 
 ::: zone-end
 
-Remove sensitive URLs and identifiers before logging raw attachment data. The file accessor doesn't return inline images, cards, mentions, link previews, HTML attachments, or malformed file entries. Access these items through the activity's attachment collection.
+Don't log raw attachment URLs, identifiers, or the complete payload. The file accessor doesn't return inline images, cards, mentions, link previews, HTML attachments, or malformed file entries. Access these items through the activity's attachment collection.
 
 ## Send files
 
-Send stored documents to users when your app must deliver generated reports, exports, or other downloadable content. Use file consent in personal chats, or use Microsoft Graph for stored-file scenarios across other conversation scopes.
+Send stored documents to users when your app must deliver generated reports, exports, or other downloadable content. Use Microsoft Graph for agentic and cross-scope scenarios, or use bot file consent in personal chats.
 
-### Send files in personal chat
+### Use Microsoft Graph for stored files
 
-Use the file-consent workflow to request permission before your app uploads a document to a user's OneDrive. Implement the following sequence for personal chats:
+Use Microsoft Graph when your app must send or retrieve stored files across personal chats, group chats, or channels:
+
+* Use a user's OneDrive for personal and group-chat files.
+* Use the team's SharePoint site for channel files.
+* Obtain the required storage access through OAuth 2.0.
+* Post a message attachment that references an existing stored file.
+
+For more information, see [send chat message file attachments](/graph/api/chatmessage-post?view=graph-rest-beta&preserve-view=true&tabs=http#example-4-file-attachments) and [OneDrive and SharePoint APIs](/onedrive/developer/rest-api/).
+
+### Send files with bot file consent
+
+Use the bot file-consent workflow to request permission before your bot uploads a document to a user's OneDrive. Implement the following sequence for personal chats:
 
 1. Send a `FileConsentCard`.
 1. Receive a `fileConsent/invoke` activity.
@@ -704,17 +726,6 @@ Key properties and values:
 * `contentUrl`: Set the stored file URL for user access.
 * `uniqueId`: Set the OneDrive or SharePoint drive-item ID.
 * `fileType`: Set the platform-reported file extension without punctuation.
-
-### Use Microsoft Graph for stored files
-
-Use Microsoft Graph when your app must send or retrieve stored files outside the personal-chat file-consent workflow:
-
-* Use a user's OneDrive for personal and group-chat files.
-* Use the team's SharePoint site for channel files.
-* Obtain the required storage access through OAuth 2.0.
-* Post a message attachment that references an existing stored file.
-
-For more information, see [send chat message file attachments](/graph/api/chatmessage-post?view=graph-rest-beta&preserve-view=true&tabs=http#example-4-file-attachments) and [OneDrive and SharePoint APIs](/onedrive/developer/rest-api/).
 
 ## Work with inline images
 
