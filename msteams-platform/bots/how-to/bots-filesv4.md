@@ -493,6 +493,10 @@ Use the file-consent workflow to request permission before your app uploads a do
 1. Send a `FileInfoCard` that links to the uploaded file.
 1. If the user declines, discard the pending content.
 
+#### Request file consent
+
+Request consent so the user can review the file name, purpose, and size before your app uploads it to OneDrive. Send a `FileConsentCard` and retain the pending file content until the user accepts or declines.
+
 The following message requests permission to upload a file:
 
 :::image type="content" source="../../assets/images/bots/bot-file-consent-card.png" alt-text="Consent card requesting permission to upload a file." lightbox="../../assets/images/bots/bot-file-consent-card.png" border="true":::
@@ -533,7 +537,15 @@ Key properties and values:
 
 Keep pending file bytes outside the context object. Apply expiration and cleanup policies to pending uploads.
 
+#### Handle acceptance or decline
+
+Handle the consent response to decide whether to upload the pending file or discard it. Inspect the `fileConsent/invoke` action and retain only the identifiers required to locate the pending content.
+
 When the user accepts, Teams sends `fileConsent/invoke` with `action` set to `accept` and an `uploadInfo.uploadUrl`. If the user declines, `action` is `decline`.
+
+#### Upload file content
+
+Upload the pending bytes only after the user accepts the file. Use the supplied upload URL, required byte-range headers, and HTTP `PUT`, then verify that OneDrive returns a successful status.
 
 Use the upload URL to transfer the file bytes:
 
@@ -663,6 +675,10 @@ Key parameters and values:
 * `response.status_code`: Accept HTTP 200 or 201 and fail otherwise.
 
 ::: zone-end
+
+#### Notify the user
+
+Notify the user after the upload succeeds so they can open or download the stored file. Send a `FileInfoCard` containing the drive-item identifier, file type, and stored file URL.
 
 After a successful upload, send a file information attachment:
 
