@@ -47,8 +47,8 @@ Choose an approach based on the content and conversation scope. The following op
 | Requirement | Recommended approach |
 | --- | --- |
 | Receive a document in a personal chat | Teams SDK file accessor |
-| Send or retrieve stored files across conversation scopes | Microsoft Graph |
 | Send a document from a bot in a personal chat | Teams SDK file consent |
+| Send or retrieve stored files across conversation scopes | Microsoft Graph |
 | Receive an image pasted into a message | Inspect the activity attachments |
 | Send an image beside message text | Image attachment |
 | Position an image within formatted text | Base64 image in HTML/XML content |
@@ -494,17 +494,6 @@ Don't log raw attachment URLs, identifiers, or the complete payload. The file ac
 
 Send stored documents to users when your app must deliver generated reports, exports, or other downloadable content. Use Microsoft Graph for agentic and cross-scope scenarios, or use bot file consent in personal chats.
 
-### Use Microsoft Graph for stored files
-
-Use Microsoft Graph when your app must send or retrieve stored files across personal chats, group chats, or channels:
-
-* Use a user's OneDrive for personal and group-chat files.
-* Use the team's SharePoint site for channel files.
-* Obtain the required storage access through OAuth 2.0.
-* Post a message attachment that references an existing stored file.
-
-For more information, see [send chat message file attachments](/graph/api/chatmessage-post?view=graph-rest-beta&preserve-view=true&tabs=http#example-4-file-attachments) and [OneDrive and SharePoint APIs](/onedrive/developer/rest-api/).
-
 ### Send files with bot file consent
 
 Use the bot file-consent workflow to request permission before your bot uploads a document to a user's OneDrive. Implement the following sequence for personal chats:
@@ -726,6 +715,17 @@ Key properties and values:
 * `contentUrl`: Set the stored file URL for user access.
 * `uniqueId`: Set the OneDrive or SharePoint drive-item ID.
 * `fileType`: Set the platform-reported file extension without punctuation.
+
+### Use Microsoft Graph for stored files
+
+Use Microsoft Graph when your app must send or retrieve stored files across personal chats, group chats, or channels:
+
+* Use a user's OneDrive for personal and group-chat files.
+* Use the team's SharePoint site for channel files.
+* Obtain the required storage access through OAuth 2.0.
+* Post a message attachment that references an existing stored file.
+
+For more information, see [send chat message file attachments](/graph/api/chatmessage-post?view=graph-rest-beta&preserve-view=true&tabs=http#example-4-file-attachments) and [OneDrive and SharePoint APIs](/onedrive/developer/rest-api/).
 
 ## Work with inline images
 
