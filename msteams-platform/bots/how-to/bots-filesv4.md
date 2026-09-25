@@ -74,9 +74,18 @@ Receive document files that users attach to personal chats so your agent can ins
 
 Configure file support so your agent or bot has the permissions and platform settings required to receive documents. Complete the setup for your app identity before implementing file handlers.
 
+The required configuration depends on the identity and file operation:
+
+| Scenario | App manifest update | Other configuration |
+| --- | --- | --- |
+| Agentic user receives a file | None | Add a Microsoft Graph file permission to the agent blueprint and obtain administrator consent. |
+| Bot receives or sends a file through file consent | Set `supportsFiles` to `true` on the bot entry. | None for the pre-authorized file URL supplied by Teams. |
+| App sends or retrieves a stored file with Microsoft Graph | No file-specific app manifest property | Configure the required Microsoft Graph permission and authentication for the calling identity. |
+| App receives or sends an inline image | None | Use the authenticated SDK client to receive images. Sending images requires no Graph permission or user sign-in. |
+
 #### Agentic user
 
-For an agentic user, configure a Microsoft Graph file permission on the agent blueprint and obtain administrator consent. The agentic user retrieves file content through Microsoft Graph with its own identity. For more information, see [inheritable permissions](/entra/agent-id/concept-inheritable-permissions).
+For an agentic user, you don't need to set `supportsFiles` or add another file-specific app manifest property. Configure a Microsoft Graph file permission on the agent blueprint and obtain administrator consent. The agentic user retrieves file content through Microsoft Graph with its own identity. For more information, see [inheritable permissions](/entra/agent-id/concept-inheritable-permissions).
 
 > [!IMPORTANT]
 >
@@ -84,7 +93,7 @@ For an agentic user, configure a Microsoft Graph file permission on the agent bl
 
 #### Bot
 
-For a bot, set `supportsFiles` to `true` in the bot entry of the app manifest:
+For a bot that receives files or uses file consent, set `supportsFiles` to `true` in the bot entry of the app manifest:
 
 ```json
 {
