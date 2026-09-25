@@ -42,14 +42,14 @@ Files and inline images behave differently:
 
 ## Developer experience
 
-Choose an approach based on the content and conversation scope:
+Choose an approach based on the content and conversation scope. The following options follow the implementation order in this article:
 
 | Requirement | Recommended approach |
 | --- | --- |
 | Receive a document in a personal chat | Teams SDK file accessor |
+| Send or retrieve stored files across conversation scopes | Microsoft Graph |
+| Send a document from a bot in a personal chat | Teams SDK file consent |
 | Receive an image pasted into a message | Inspect the activity attachments |
-| Send a document in a personal chat | Teams SDK file consent |
-| Send or retrieve stored files in other scopes | Microsoft Graph |
 | Send an image beside message text | Image attachment |
 | Position an image within formatted text | Base64 image in HTML/XML content |
 | Add an image to interactive content | Adaptive Card `Image` element |
@@ -61,8 +61,8 @@ The following table summarizes scope and permission requirements:
 | Operation | Personal chat | Group chat | Channel | Requirement |
 | --- | --- | --- | --- | --- |
 | Receive files with the Teams SDK file accessor | Supported | Not explicitly supported | Not explicitly supported | Agentic users require Graph file permissions. Bots use a pre-authorized URL. |
-| Send files with file consent | Supported | Not supported | Not supported | Set `supportsFiles` to `true` for bots. |
 | Send or retrieve files with Graph | Supported | Supported | Supported | Configure Microsoft Graph permissions appropriate to the storage location, API, calling identity, and access model used by your app. Use the least-privileged permission documented for the selected OneDrive or SharePoint operation. |
+| Send files with bot file consent | Supported | Not supported | Not supported | Set `supportsFiles` to `true` for bots. |
 | Receive inline images | Supported through activity attachments | Use activity attachments | Use activity attachments | Use the app's authenticated HTTP client. |
 | Send inline images | Supported | Supported | Supported | No Graph permission or user sign-in is required. |
 
