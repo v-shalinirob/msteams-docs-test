@@ -65,7 +65,7 @@ Before you implement connected authentication, you need:
 - A public HTTPS origin that hosts your agent endpoint, connected authentication page, and any required OAuth bridge endpoints.
 - A connected authentication URL, such as `https://app.contoso.com/authTab`.
 
-For information about registering the trusted broker redirect and acquiring NAA tokens, see [Nested app authentication](nested-authentication.md).
+Connected authentication requires NAA so the associated tab, which is a single-page application (SPA), can acquire a Microsoft Entra token within Teams. Before you implement the connected flow, understand the NAA concepts for registering the SPA, configuring the trusted broker redirect, initializing TeamsJS before MSAL, and attempting silent token acquisition before requesting user interaction. For more information, see [Nested app authentication](nested-authentication.md).
 
 ### Configure the app manifest
 
