@@ -1,6 +1,6 @@
 ---
 title: Connect agent and tab authentication
-description: Learn how connected authentication coordinates OAuth provider or Microsoft Entra ID authentication for an agent or bot and an associated tab.
+description: Learn how connected authentication coordinates OAuth provider or Microsoft Entra ID authentication for an agent and an associated tab.
 ms.topic: how-to
 ms.localizationpriority: medium
 ms.date: 09/22/2026
@@ -8,28 +8,28 @@ ms.date: 09/22/2026
 
 # Connect agent and tab authentication
 
-Connected authentication provides one coordinated authentication experience for a Teams app that includes an agent or bot and a tab.
+Connected authentication provides one coordinated authentication experience for a Teams app that includes an agent and a tab.
 
 > [!IMPORTANT]
-> Connected authentication is a one-way flow from the agent or bot to the tab. Signing in to the agent or bot can authenticate the associated tab after the connected authentication flow completes. Signing in to the tab doesn't sign the user in to the agent or bot.
+> Connected authentication is a one-way flow from the agent to the tab. Signing in to the agent can authenticate the associated tab after the connected authentication flow completes. Signing in to the tab doesn't sign the user in to the agent.
 
 Connected authentication supports these authentication paths equally:
 
-- **OAuth provider authentication with account linking**: The user signs in to the agent or bot with an OAuth identity provider. The app links that identity to the user's Microsoft identity so the associated tab can authenticate the same user.
-- **Microsoft Entra ID authentication**: The user signs in to the agent or bot with their Microsoft Entra identity. The app coordinates that authentication with the associated tab without requiring an external OAuth provider account-linking step.
+- **OAuth provider authentication with account linking**: The user signs in to the agent with an OAuth identity provider. The app links that identity to the user's Microsoft identity so the associated tab can authenticate the same user.
+- **Microsoft Entra ID authentication**: The user signs in to the agent with their Microsoft Entra identity. The app coordinates that authentication with the associated tab without requiring an external OAuth provider account-linking step.
 
 ## User experience
 
-Connected authentication streamlines the authentication flows for an agent or bot and an associated tab. Users sign in to the agent or bot first with an OAuth provider or Microsoft Entra ID. For OAuth provider authentication, users can link that account to their Microsoft identity. For Microsoft Entra ID authentication, the app uses their Microsoft identity directly. After the connected authentication flow completes, the associated tab can authenticate the user through their active Microsoft session, reducing repeated sign-in prompts.
+Connected authentication streamlines the authentication flows for an agent and an associated tab. Users sign in to the agent first with an OAuth provider or Microsoft Entra ID. For OAuth provider authentication, users can link that account to their Microsoft identity. For Microsoft Entra ID authentication, the app uses their Microsoft identity directly. After the connected authentication flow completes, the associated tab can authenticate the user through their active Microsoft session, reducing repeated sign-in prompts.
 
 [Placeholder: Screenshots of the connected authentication dialog.]
 
 **Key highlights for users**:
 
-- **Unified user experience**: Users sign in to the agent or bot and can access the associated tab with fewer repeated sign-in prompts.
+- **Unified user experience**: Users sign in to the agent and can access the associated tab with fewer repeated sign-in prompts.
 - **Consistent Onboarding**: Connected authentication flow ensures that all users meet minimum setup requirements before accessing app features. Following onboarding, the user experiences increased reliability and lesser support issues.
 - **Fewer sign-in prompts**: Microsoft Entra Nested app authentication (NAA) allows the associated tab to reuse the user's active Microsoft session when authentication requirements are satisfied.
-- **Seamless access**: Connected authentication provides smoother interactions as the agent or bot and associated tab recognize the same authenticated user.
+- **Seamless access**: Connected authentication provides smoother interactions as the agent and associated tab recognize the same authenticated user.
 
 ## Connected authentication at runtime
 
@@ -37,18 +37,18 @@ The connected authentication flow works as follows:
 
 :::image type="content" source="../../assets/images/authentication/connected-authentication/authentication-flow.png" alt-text="This image shows the authentication flow for connected authentication.":::
 
-1. The user opens the agent or bot and is prompted to sign in with an OAuth provider or Microsoft Entra ID.
+1. The user opens the agent and is prompted to sign in with an OAuth provider or Microsoft Entra ID.
 1. For OAuth provider authentication, the user chooses whether to link that account to their Microsoft identity. For Microsoft Entra ID authentication, the app continues with the user's Microsoft identity.
 1. The user reviews and accepts any required Microsoft identity permissions.
 1. After connected authentication succeeds, the user can open the associated tab without another sign-in prompt.
 
-For OAuth provider authentication, if the user skips account linking or later revokes it, the agent or bot remains independently authenticated, while the tab uses its existing sign-in flow or the app restarts account linking from the agent or bot. For either authentication path, if consent, Conditional Access, or reauthentication is required later, the app displays a Microsoft identity prompt.
+For OAuth provider authentication, if the user skips account linking or later revokes it, the agent remains independently authenticated, while the tab uses its existing sign-in flow or the app restarts account linking from the agent or bot. For either authentication path, if consent, Conditional Access, or reauthentication is required later, the app displays a Microsoft identity prompt.
 
-OAuth provider authentication links identity records, while Microsoft Entra ID authentication uses the user's Microsoft identity directly. Neither path combines or shares access tokens between the agent or bot and the tab.
+OAuth provider authentication links identity records, while Microsoft Entra ID authentication uses the user's Microsoft identity directly. Neither path combines or shares access tokens between the agent and the tab.
 
 ## Implement connected authentication
 
-Coordinate the app manifest, Teams SDK agent or bot sign-in, NAA token acquisition, and any required backend identity linking so the tab can authenticate the same user.
+Coordinate the app manifest, Teams SDK agent sign-in, NAA token acquisition, and any required backend identity linking so the tab can authenticate the same user.
 
 > [!NOTE]
 > The code snippets in this implementation walkthrough show the OAuth provider authentication with account linking path and use Auth0 as the example provider. Connected authentication supports Microsoft Entra ID authentication equally; use the Teams SDK Microsoft Entra ID authentication configuration for that path and omit external-provider account-linking operations that don't apply.
@@ -62,7 +62,7 @@ Before you implement connected authentication, you need:
 - An Azure bot resource configured for OAuth provider or Microsoft Entra ID authentication.
 - A Microsoft Entra app registration configured for NAA.
 - For OAuth provider authentication, an identity provider that supports account linking and Authorization Code flow with PKCE.
-- A public HTTPS origin that hosts your agent or bot endpoint, connected authentication page, and any required OAuth bridge endpoints.
+- A public HTTPS origin that hosts your agent endpoint, connected authentication page, and any required OAuth bridge endpoints.
 - A connected authentication URL, such as `https://app.contoso.com/authTab`.
 
 For information about registering the trusted broker redirect and acquiring NAA tokens, see [Nested app authentication](nested-authentication.md).
@@ -98,7 +98,7 @@ Use app manifest version 1.22 or later to add `nestedAppAuthInfo`. The following
 }
 ```
 
-- `bots[0].botId`: Identifies the agent or bot registration. Set it to the Microsoft Entra application client ID to route Teams activities to the registered agent or bot.
+- `bots[0].botId`: Identifies the agent registration. Set it to the Microsoft Entra application client ID to route Teams activities to the registered agent or bot.
 - `validDomains`: Allows Teams to load the account-linking dialog. Add the host name from `ACCOUNT_LINKING_URL`, such as `app.contoso.com`, so the dialog can open in Teams.
 - `webApplicationInfo.id`: Identifies the app requesting Microsoft tokens. Set it to the same Microsoft Entra application client ID used at runtime to connect the app manifest to the NAA token request.
 - `webApplicationInfo.resource`: Identifies the agent API resource. Set the application ID URI, such as `api://botid-${{ENTRA_APP_ID}}`, to associate the Teams app with its protected API.
@@ -301,7 +301,7 @@ Test at least the following scenarios:
 
 | Scenario | Expected result |
 | --- | --- |
-| First agent or bot sign-in | The identity provider authenticates the user and Teams opens the account-linking dialog. |
+| First agent sign-in | The identity provider authenticates the user and Teams opens the account-linking dialog. |
 | Account-linking consent | NAA obtains the requested Microsoft token and the backend links the verified identities. |
 | Tab open after linking | The tab authenticates silently with the linked Microsoft identity. |
 | Different device with an active Teams session | The linked Microsoft identity authenticates the user even when the original identity-provider session isn't available. |
