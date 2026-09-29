@@ -26,12 +26,12 @@ Connected authentication streamlines the authentication flows for an agent and a
 - **Fewer sign-in prompts**: Microsoft Entra Nested app authentication (NAA) allows the associated tab to reuse the user's active Microsoft session when authentication requirements are satisfied.
 - **Seamless access**: Connected authentication provides smoother interactions as the agent and associated tab recognize the same authenticated user.
 
-Connected authentication supports these authentication paths equally:
+## Connected authentication at runtime
+
+Connected authentication supports the following authentication paths equally:
 
 - **Microsoft Entra ID authentication**: The user signs in to the agent with their Microsoft Entra identity. The app coordinates that authentication with the associated tab without requiring an external OAuth provider account-linking step.
 - **OAuth provider authentication with account linking**: The user signs in to the agent with an OAuth identity provider. The app links that identity to the user's Microsoft identity so the associated tab can authenticate the same user.
-
-## Connected authentication at runtime
 
 The connected authentication flow works as follows:
 
