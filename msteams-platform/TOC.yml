@@ -285,7 +285,7 @@
     displayName: Single sign-on, OAuth provider
   - name: Connect agent and tab authentication
     href: concepts/authentication/connected-authentication.md
-    displayName: Connected authentication, account linking, agent, bot, tab, Teams SDK, Auth0, nested app authentication, NAA
+    displayName: Connected authentication, OAuth, Microsoft Entra ID, AAD, account linking, agent, bot, tab, Teams SDK, Auth0, nested app authentication, NAA
   - name: Enable SSO for tab app using Entra ID
     items:
     - name: Overview for tab SSO

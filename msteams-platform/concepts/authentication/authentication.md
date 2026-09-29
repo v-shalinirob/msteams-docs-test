@@ -12,7 +12,7 @@ Authentication involves validating app users and securing both the app and its u
 Choose to add authentication for your app in one of the following ways:
 
 * **Connect agent and tab authentication**:
-  Connected authentication links the external identity used to sign in to a Teams SDK agent or bot with the user's Microsoft identity. After the accounts are linked, an associated tab can use NAA to authenticate the user without another interactive sign-in. For more information, see [Connect agent and tab authentication](connected-authentication.md).
+  Connected authentication supports OAuth provider authentication with account linking and Microsoft Entra ID authentication for a Teams SDK agent or bot and an associated tab. After the connected authentication flow completes, the tab can use NAA to authenticate the same user without another interactive sign-in. For more information, see [Connect agent and tab authentication](connected-authentication.md).
 
 * **Enable single sign-on (SSO) in a Teams app**:
   SSO within Teams is an authentication method that uses an app user's Teams identity to provide them with access to your app. A user who has logged into Teams doesn't need to log in again to your app within the Teams environment. With only a consent required from the app user, the Teams app retrieves access details for them from Microsoft Entra ID. After the app user has given consent, they can access the app even from other devices without having to be validated again. SSO is available for one-on-one and group scopes.
