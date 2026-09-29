@@ -1,6 +1,6 @@
 ---
 title: Connect agent and tab authentication
-description: Learn how connected authentication links an agent or bot sign-in to a Microsoft identity for seamless access to an associated tab.
+description: Learn how connected authentication links an agent sign-in to a Microsoft identity for seamless access to an associated tab.
 ms.topic: how-to
 ms.localizationpriority: medium
 ms.date: 09/22/2026
@@ -8,14 +8,14 @@ ms.date: 09/22/2026
 
 # Connect agent and tab authentication
 
-Connected authentication combines sign-in and authentication flow for a **Teams app that includes an agent or bot and a tab**, with one coordinated authentication experience.
+Connected authentication combines sign-in and authentication flow for a **Teams app that includes an agent and a tab**, with one coordinated authentication experience.
 
 > [!IMPORTANT]
-> Connected authentication is a one-way flow from the agent or bot to the tab. Signing in to the agent or bot can authenticate the associated tab after account linking. Signing in to the tab doesn't sign the user in to the agent or bot.
+> Connected authentication is a one-way flow from the agent to the tab. Signing in to the agent can authenticate the associated tab after account linking. Signing in to the tab doesn't sign the user in to the agent.
 
 ## User experience
 
-Connected authentication streamlines the authentication flows for an agent or bot and an associated tab through account linking. Users sign in to the agent or bot first and can then link that account to their Microsoft identity. After linking, the hosted experience can authenticate the user through their active Microsoft session, reducing repeated prompts across app capabilities.
+Connected authentication streamlines the authentication flows for an agent and an associated tab through account linking. Users sign in to the agent first and can then link that account to their Microsoft identity. After linking, the hosted experience can authenticate the user through their active Microsoft session, reducing repeated prompts across app capabilities.
 
 [Placeholder: Screenshots of connected auth pop-up.]
 
@@ -24,7 +24,7 @@ Connected authentication streamlines the authentication flows for an agent or bo
 - **Unified user experience**: Users authenticate once and gain access to all app capabilities, reducing confusion and repetitive logins.
 - **Consistent Onboarding**: Connected authentication flow ensures that all users meet minimum setup requirements before accessing app features. Following onboarding, the user experiences increased reliability and lesser support issues.
 - **Persistent Login**: Account linking with Entra Nested app authentication (NAA) ensures that the user stays logged in, even if the primary login method expires.
-- **Seamless Access**: Connected authentication achieves smoother app transactions and interactions as bot and tab capabilities recognize the user through the linked tokens.
+- **Seamless Access**: Connected authentication achieves smoother app transactions and interactions as agent and tab capabilities recognize the user through the linked tokens.
 
 ## Connected authentication at runtime
 
@@ -32,36 +32,36 @@ The connected authentication flow works as follows:
 
 :::image type="content" source="../../assets/images/authentication/connected-authentication/authentication-flow.png" alt-text="This image shows the authentication flow for connected authentication.":::
 
-1. The user opens the agent or bot and is prompted to sign in with the app's identity provider.
+1. The user opens the agent and is prompted to sign in with the app's identity provider.
 1. After sign-in succeeds, the user chooses whether to link that account to their Microsoft identity for access to the associated tab.
 1. If the user chooses to link the accounts, they review and accept any required Microsoft identity permissions.
 1. After linking succeeds, the user can open the associated tab without another sign-in prompt.
 
-If the user skips linking or later revokes it, the agent or bot remains independently authenticated, while the tab uses its existing sign-in flow or the app restarts account linking from the agent or bot. If consent, Conditional Access, or reauthentication is required later, the app displays a Microsoft identity prompt.
+If the user skips linking or later revokes it, the agent remains independently authenticated, while the tab uses its existing sign-in flow or the app restarts account linking from the agent. If consent, Conditional Access, or reauthentication is required later, the app displays a Microsoft identity prompt.
 
-Connected authentication links identity records; it doesn't combine or share access tokens between the agent or bot and the tab.
+Connected authentication links identity records; it doesn't combine or share access tokens between the agent and the tab.
 
 ## Implement connected authentication
 
-Coordinate the app manifest, Teams SDK agent or bot sign-in, NAA token acquisition, and backend identity linking so the tab can authenticate the linked user.
+Coordinate the app manifest, Teams SDK agent sign-in, NAA token acquisition, and backend identity linking so the tab can authenticate the linked user.
 
 ### Prerequisites
 
 Before you implement connected authentication, you need:
 
-- A Teams app with a personal agent or bot and a tab.
+- A Teams app with a personal agent and a tab.
 - A Teams SDK TypeScript project using `@microsoft/teams.apps`, `@microsoft/teams.api`, and related Teams SDK packages.
 - An Azure bot resource with an OAuth connection for your identity provider.
 - A Microsoft Entra app registration configured for NAA.
 - An identity provider that supports account linking and Authorization Code flow with PKCE.
-- A public HTTPS origin that hosts your agent or bot endpoint, account-linking  popup, and OAuth bridge endpoints.
+- A public HTTPS origin that hosts your agent's endpoint, account-linking  popup, and OAuth bridge endpoints.
 - An account-linking URL, such as `https://app.contoso.com/authTab`.
 
 For information about registering the trusted broker redirect and acquiring NAA tokens, see [Nested app authentication](nested-authentication.md).
 
 ### Configure the app manifest
 
-Use App manifest version 1.22 or later to add `nestedAppAuthInfo`. The following example uses version 1.23:
+Use app manifest version 1.22 or later to add `nestedAppAuthInfo`. The following example uses version 1.23:
 
 ```json
 {
@@ -90,16 +90,16 @@ Use App manifest version 1.22 or later to add `nestedAppAuthInfo`. The following
 }
 ```
 
-- `bots[0].botId`: Identifies the agent or bot registration. Set it to the Microsoft Entra application client ID to route Teams activities to the registered agent or bot.
+- `bots[0].botId`: Identifies the agent registration. Set it to the Microsoft Entra application client ID to route Teams activities to the registered agent.
 - `validDomains`: Allows Teams to load the linking  popup. Add the host name from `ACCOUNT_LINKING_URL`, such as `app.contoso.com`, so the  popup can open in Teams.
 - `webApplicationInfo.id`: Identifies the app requesting Microsoft tokens. Set it to the same Microsoft Entra application client ID used at runtime to connect the app manifest to the NAA token request.
-- `webApplicationInfo.resource`: Identifies the agent or bot API resource. Set the application ID URI, such as `api://botid-${{ENTRA_APP_ID}}`, to associate the Teams app with its protected API.
+- `webApplicationInfo.resource`: Identifies the agent API resource. Set the application ID URI, such as `api://botid-${{ENTRA_APP_ID}}`, to associate the Teams app with its protected API.
 - `nestedAppAuthInfo.redirectUri`: Registers the trusted NAA broker redirect. Set the SPA redirect to `brk-multihub://<app-host-name>` without a path so Microsoft 365 hosts can broker NAA authentication.
 - `nestedAppAuthInfo.scopes`: Declares permissions requested during NAA authentication. Add the exact runtime scopes, such as `User.Read`, to enable token prefetch and Microsoft Entra consent validation.
 
 ### Configure Teams SDK authentication
 
-Set the external provider's OAuth connection as the default connection for your agent or app:
+Set the external provider's OAuth connection as the default connection for your agent:
 
 ```typescript
 import { App, ExpressAdapter } from '@microsoft/teams.apps';
@@ -117,7 +117,7 @@ const app = new App({
 ```
 
 - `connectionName`: Identifies the external OAuth connection. Set `CONNECTION_NAME` to the exact name of the OAuth connection configured for the Azure Bot resource; the example uses `Auth0` when the environment variable isn't set.
-- `applicationIdUri`: Identifies the protected agent or bot resource. Set `RESOURCE_URI` to the application ID URI configured in Microsoft Entra ID.
+- `applicationIdUri`: Identifies the protected agent resource. Set `RESOURCE_URI` to the application ID URI configured in Microsoft Entra ID.
 - `httpServerAdapter`: Connects the Teams SDK app to the web server. Create an `ExpressAdapter` instance so the app can receive activities and register the account-linking routes on the same server.
 - `oauth.defaultConnectionName`: Selects the connection used by `signin()` and token retrieval. Set it to `connectionName` so both operations use the same external identity provider.
 
@@ -270,7 +270,7 @@ Account-linking should complete these operations:
 
    - `channelId`: Selects the channel for the primary token. Use the channel ID stored in the linking session to retrieve the token for the verified conversation.
    - `userId`: Selects the user for the primary token. Use the user ID stored in the linking session to prevent linking another user's token.
-   - `connectionName`: Selects the identity-provider token to retrieve. Use the same OAuth connection as the agent or bot sign-in to supply the primary identity for linking.
+   - `connectionName`: Selects the identity-provider token to retrieve. Use the same OAuth connection as the agent sign-in to supply the primary identity for linking.
 
 1. Validate both identities immediately before linking.
 1. Call the identity provider's account-linking API.
@@ -293,11 +293,11 @@ Test at least the following scenarios:
 
 | Scenario | Expected result |
 | --- | --- |
-| First agent or bot sign-in | The identity provider authenticates the user and Teams opens the account-linking  popup. |
+| First agent sign-in | The identity provider authenticates the user and Teams opens the account-linking  popup. |
 | Account-linking consent | NAA obtains the requested Microsoft token and the backend links the verified identities. |
 | Tab open after linking | The tab authenticates silently with the linked Microsoft identity. |
 | Different device with an active Teams session | The linked Microsoft identity authenticates the user even when the original identity-provider session isn't available. |
-| User skips linking | The agent or bot remains signed in, but the tab can require its existing sign-in flow. |
+| User skips linking | The agent remains signed in, but the tab can require its existing sign-in flow. |
 | Expired linking session | The backend rejects the request and asks the user to start sign-in again. |
 | Concurrent linking attempts | Each attempt remains bound to the correct user, conversation, and one-time correlation value. |
 | Revoked consent or Conditional Access | The app requests interaction and handles denial without exposing tokens. |
@@ -316,7 +316,7 @@ Test at least the following scenarios:
 
 Follow these guidelines when you design and deploy connected authentication:
 
-- **Keep authentication states independent**: Don't infer the authentication state of the agent or bot from the tab's state.
+- **Keep authentication states independent**: Don't infer the authentication state of the agent from the tab's state.
 - **Preserve token boundaries**: Use each token only for its intended resource and audience, and never pass tokens between app capabilities or expose them in URLs.
 - **Make account linking clear and optional**: Explain why the Microsoft account is requested and how linking affects the tab. Allow the user to continue or skip linking, and handle cancellation and failure.
 - **Isolate account-linking attempts**: Prevent concurrent or replayed requests from linking identities that belong to different users or conversations.
@@ -341,8 +341,8 @@ Handle these errors appropriately in your agent or app:
 | Status code | Error code | Description | Developer action |
 | --- | --- | --- | --- |
 | HTTP `400` | Invalid token or request | The token submission, authorization request, authorization code, or account-linking request is invalid. | Validate required values, reject malformed input, and ask the user to restart sign-in when the request can't be recovered. |
-| HTTP `404` | Missing sign-in state | The `signin/verifyState` activity doesn't contain the state value required to complete sign-in. | Confirm that the agent or bot starts sign-in through its configured OAuth connection and that the activity includes `value.state`. Ask the user to restart sign-in instead of continuing without state. |
-| HTTP `410` | Expired linking session | The account-linking session expired or no longer exists. | Ask the user to restart sign-in from the agent or bot. |
+| HTTP `404` | Missing sign-in state | The `signin/verifyState` activity doesn't contain the state value required to complete sign-in. | Confirm that the agent starts sign-in through its configured OAuth connection and that the activity includes `value.state`. Ask the user to restart sign-in instead of continuing without state. |
+| HTTP `410` | Expired linking session | The account-linking session expired or no longer exists. | Ask the user to restart sign-in from the agent. |
 | HTTP `412` | Sign-in state verification failed | Teams SDK couldn't exchange the sign-in state for the identity-provider token. | Verify the OAuth connection name and provider configuration. Treat the state as expired or invalid and ask the user to start a new sign-in attempt. |
 | HTTP `500` | Account linking failed | An unexpected error prevented the backend from linking the accounts. | Log a correlation identifier without logging tokens, return a generic failure message, and investigate identity validation, storage, and provider communication before retrying. |
 | HTTP `503` | Account linking not configured | The backend doesn't have the account-linking URL or external-provider configuration required to link accounts. | Configure `ACCOUNT_LINKING_URL`, the provider domain, OAuth connection, credentials, and account-linking permissions before enabling the flow. |
@@ -365,7 +365,7 @@ Handle these errors appropriately in your agent or app:
 ## See also
 
 - [Authenticate users in Microsoft Teams](authentication.md)
-- [Add authentication to a Teams agent or bot](../../bots/how-to/authentication/add-authentication.md)
+- [Add authentication to a Teams agent](../../bots/how-to/authentication/add-authentication.md)
 - [Nested app authentication](nested-authentication.md)
 - [App manifest schema](/microsoftteams/platform/resources/schema/manifest-schema)
 - [Teams SDK documentation](https://microsoft.github.io/teams-sdk/)
