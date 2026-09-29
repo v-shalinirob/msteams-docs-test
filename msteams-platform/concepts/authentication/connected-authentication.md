@@ -33,7 +33,7 @@ Connected authentication supports the following authentication paths equally:
 - **Microsoft Entra ID authentication**: The user signs in to the agent with their Microsoft Entra identity. The app coordinates that authentication with the associated tab without requiring an external OAuth provider account-linking step.
 - **OAuth provider authentication with account linking**: The user signs in to the agent with an OAuth identity provider. The app links that identity to the user's Microsoft identity so the associated tab can authenticate the same user.
 
-The connected authentication flow works as follows:
+The connected authentication flow works as follows for the OAuth scenario:
 
 :::image type="content" source="../../assets/images/authentication/connected-authentication/authentication-flow.png" alt-text="This image shows the authentication flow for connected authentication.":::
 
