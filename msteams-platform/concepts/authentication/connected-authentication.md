@@ -28,10 +28,14 @@ Connected authentication streamlines the authentication flows for an agent and a
 
 ## Connected authentication at runtime
 
-Connected authentication supports the following authentication paths equally:
+Connected authentication coordinates authentication between an agent and an associated tab so both capabilities can recognize the same user without sharing tokens or authentication sessions using account linking. It supports both **OAuth provider authentication** and **Microsoft Entra ID authentication**.
 
-- **Microsoft Entra ID authentication**: The user signs in to the agent with their Microsoft Entra identity. The app coordinates that authentication with the associated tab without requiring an external OAuth provider account-linking step.
-- **OAuth provider authentication with account linking**: The user signs in to the agent with an OAuth identity provider. The app links that identity to the user's Microsoft identity so the associated tab can authenticate the same user.
+**Account linking** establishes a trusted association between the identity used by the agent or bot and the identity used by the tab. The exact operation depends on the authentication path:
+
+- **Microsoft Entra ID authentication:** Both capabilities authenticate through Microsoft Entra ID. The application correlates the verified Microsoft identity across the agent and tab. A separate external-provider linking operation might not be necessary.
+- **OAuth provider authentication:** The agent authenticates the user through an OAuth provider, while the tab authenticates the user through Microsoft Entra ID. The application associates the provider-managed identity with the user’s Microsoft identity.
+
+In either path, connected authentication doesn’t merge authentication sessions or copy tokens between capabilities. The agent and tab acquire and use their own tokens for their respective resources. The application relies on verified identity information to determine that both authentication results represent the same user.
 
 The connected authentication flow works as follows for the OAuth scenario:
 
