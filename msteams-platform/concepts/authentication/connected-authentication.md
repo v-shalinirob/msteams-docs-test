@@ -71,6 +71,15 @@ Before you implement connected authentication, you need:
 
 Connected authentication requires NAA so the associated tab, which is a single-page application (SPA), can acquire a Microsoft Entra token within Teams. Before you implement the connected flow, understand the NAA concepts for registering the SPA, configuring the trusted broker redirect, initializing TeamsJS before MSAL, and attempting silent token acquisition before requesting user interaction. For more information, see [Nested app authentication](nested-authentication.md).
 
+#### How NAA relates to connected authentication
+
+Connected authentication coordinates the user’s authentication across the agent and associated tab. NAA provides the Microsoft Entra authentication required by the tab, which is a single-page application embedded in Teams.
+
+- For Microsoft Entra ID authentication, NAA allows the tab to authenticate the same Microsoft identity used by the agent.
+- For OAuth provider authentication, the app uses the Microsoft identity acquired through NAA when linking it to the OAuth identity.
+
+NAA doesn’t link identities or share the agent’s authentication session with the tab. The app remains responsible for validating and correlating the identities.
+
 ### Configure the app manifest
 
 Use app manifest version 1.22 or later to add `nestedAppAuthInfo`. The following example uses version 1.23:
@@ -163,14 +172,12 @@ You should coordinate independently verified authentication results as follows:
 1. Create a short-lived, single-use linking session bound to the verified Teams user and channel. Return its app-hosted URL in the invoke response so Teams can open the connected authentication dialog. Include only the session ID in the URL, but not access or ID tokens.
 1. In the dialog, use NAA to acquire the user’s Microsoft Entra token and send it with the linking-session ID to the backend over HTTPS.
 1. Validate the Microsoft token, linking session, and agent identity.
-    - For Microsoft Entra ID authentication, confirm that the identities correspond.
-    - For OAuth authentication, associate the verified OAuth identity with the Microsoft identity.
+    - For **Microsoft Entra ID** authentication, confirm that the identities correspond.
+    - For **OAuth** authentication, associate the verified OAuth identity with the Microsoft identity.
 1. Persist only the identity association or application data required to recognize the user.
 1. Consume the linking session once and delete all temporary tokens, codes, and correlation data.
 
-The backend should validate token signatures, issuers, audiences, tenants, expiration, nonces, and scopes as applicable.
-
-The example uses an app-defined `createLinkingSession()` helper. The helper should generate a session ID, persist its association with the verified channel and user, set a short expiration, and allow the session to be consumed only once.
+The backend should validate token signatures, issuers, audiences, tenants, expiration, nonces, and scopes as applicable. The example uses an app-defined `createLinkingSession()` helper. The helper should generate a session ID, persist its association with the verified channel and user, set a short expiration, and allow the session to be consumed only once.
 
 ```typescript
 import { InvokeResponse } from '@microsoft/teams.api';
