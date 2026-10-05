@@ -160,15 +160,17 @@ app.event('signin', async ({ send }) => {
 You should coordinate independently verified authentication results as follows:
 
 1. Authenticate the user in the agent through the configured Microsoft Entra ID or OAuth connection. Handle `signin.verify-state` to verify the sign-in by exchanging its state code through the configured connection.
-1. Create a short-lived, single-use linking session bound to the verified Teams user and channel. Return its app-hosted URL in the invoke response so Teams can open the connected authentication dialog. Include only the session ID in the URL—not access or ID tokens.
+1. Create a short-lived, single-use linking session bound to the verified Teams user and channel. Return its app-hosted URL in the invoke response so Teams can open the connected authentication dialog. Include only the session ID in the URL, but not access or ID tokens.
 1. In the dialog, use NAA to acquire the user’s Microsoft Entra token and send it with the linking-session ID to the backend over HTTPS.
-1. Validate the Microsoft token, linking session, and agent identity. For Microsoft Entra ID authentication, confirm that the identities correspond; for OAuth authentication, associate the verified OAuth identity with the Microsoft identity.
+1. Validate the Microsoft token, linking session, and agent identity.
+    - For Microsoft Entra ID authentication, confirm that the identities correspond.
+    - For OAuth authentication, associate the verified OAuth identity with the Microsoft identity.
 1. Persist only the identity association or application data required to recognize the user.
 1. Consume the linking session once and delete all temporary tokens, codes, and correlation data.
 
-The backend must validate token signatures, issuers, audiences, tenants, expiration, nonces, and scopes as applicable. It must never infer that identities match solely from identifiers supplied by client code.
+The backend should validate token signatures, issuers, audiences, tenants, expiration, nonces, and scopes as applicable.
 
-The example uses an app-defined `createLinkingSession()` helper. The helper must generate a session ID, persist its association with the verified channel and user, set a short expiration, and allow the session to be consumed only once.
+The example uses an app-defined `createLinkingSession()` helper. The helper should generate a session ID, persist its association with the verified channel and user, set a short expiration, and allow the session to be consumed only once.
 
 ```typescript
 import { InvokeResponse } from '@microsoft/teams.api';
