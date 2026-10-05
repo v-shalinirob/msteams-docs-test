@@ -157,22 +157,14 @@ app.event('signin', async ({ send }) => {
 
 ### Return the account-linking URL
 
-You should coordinate independently verified authentication results for account linking:
+You should coordinate independently verified authentication results as follows:
 
-1. Authenticate the user in the agent through the configured Microsoft Entra ID or OAuth connection. Handle `signin.verify-state` to exchange the state code for the external-provider token.
-1. Create a short-lived linking session that binds the Teams channel and user to the account-linking request.
-1. Open an app-hosted connected authentication dialog with the session identifier. Don’t place access tokens or ID tokens in the URL.
-1. Use NAA to authenticate the user’s Microsoft identity.
-1. Send the Microsoft token and linking-session identifier to the backend.
-1. Validate the Microsoft token and retrieve or verify the agent identity.
-1. Complete the path-specific operation:
-
-    - For Microsoft Entra ID authentication, verify that the identity used by the agent corresponds to the Microsoft identity acquired for the tab.
-    - For OAuth authentication, associate the OAuth identity with the verified Microsoft identity.
-
-1. Return the session-specific account-linking URL in the invoke response:
-1. Persist only the association or application identity data required for future recognition.
-1. Consume and delete the temporary linking session and other transient authentication data.
+1. Authenticate the user in the agent through the configured Microsoft Entra ID or OAuth connection. Handle `signin.verify-state` to verify the sign-in by exchanging its state code through the configured connection.
+1. Create a short-lived, single-use linking session bound to the verified Teams user and channel. Return its app-hosted URL in the invoke response so Teams can open the connected authentication dialog. Include only the session ID in the URL—not access or ID tokens.
+1. In the dialog, use NAA to acquire the user’s Microsoft Entra token and send it with the linking-session ID to the backend over HTTPS.
+1. Validate the Microsoft token, linking session, and agent identity. For Microsoft Entra ID authentication, confirm that the identities correspond; for OAuth authentication, associate the verified OAuth identity with the Microsoft identity.
+1. Persist only the identity association or application data required to recognize the user.
+1. Consume the linking session once and delete all temporary tokens, codes, and correlation data.
 
 The backend must validate token signatures, issuers, audiences, tenants, expiration, nonces, and scopes as applicable. It must never infer that identities match solely from identifiers supplied by client code.
 
