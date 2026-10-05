@@ -62,18 +62,18 @@ Coordinate the app manifest, Teams SDK agent sign-in, NAA token acquisition, and
 Before you implement connected authentication, you need:
 
 - A Teams app with a personal agent and a tab.
-- A Teams SDK TypeScript project using `@microsoft/teams.apps`, `@microsoft/teams.api`, and related Teams SDK packages.
+- A Teams SDK agent using `@microsoft/teams.apps`, `@microsoft/teams.api`, and related Teams SDK packages.
 - An Azure bot resource configured for OAuth provider or Microsoft Entra ID authentication.
-- A Microsoft Entra app registration configured for NAA.
-- For OAuth provider authentication, an identity provider that supports account linking and Authorization Code flow with PKCE.
+- One of the following:
+  - A Microsoft Entra app registration configured for NAA.
+  - For OAuth provider authentication, an identity provider that supports account linking and Authorization Code flow with PKCE.
 - A public HTTPS origin that hosts your agent endpoint, connected authentication page, and any required OAuth bridge endpoints.
 - A connected authentication URL, such as `https://app.contoso.com/authTab`.
-
-Connected authentication requires NAA so the associated tab, which is a single-page application (SPA), can acquire a Microsoft Entra token within Teams. Before you implement the connected flow, understand the NAA concepts for registering the SPA, configuring the trusted broker redirect, initializing TeamsJS before MSAL, and attempting silent token acquisition before requesting user interaction. For more information, see [Nested app authentication](nested-authentication.md).
+- Nested app authentication (NAA) for the agent and tab authentication.
 
 #### How NAA relates to connected authentication
 
-Connected authentication coordinates the user’s authentication across the agent and associated tab. NAA provides the Microsoft Entra authentication required by the tab, which is a single-page application embedded in Teams.
+Connected authentication requires NAA so the associated tab, which is a single-page application (SPA), can acquire a Microsoft Entra token within Teams. Before you implement the connected flow, understand the NAA concepts for registering the SPA, configuring the trusted broker redirect, initializing TeamsJS before MSAL, and attempting silent token acquisition before requesting user interaction. For more information, see [Nested app authentication](nested-authentication.md). NAA provides the Microsoft Entra authentication required by the tab:
 
 - For Microsoft Entra ID authentication, NAA allows the tab to authenticate the same Microsoft identity used by the agent.
 - For OAuth provider authentication, the app uses the Microsoft identity acquired through NAA when linking it to the OAuth identity.
