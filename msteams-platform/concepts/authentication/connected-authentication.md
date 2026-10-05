@@ -157,6 +157,24 @@ app.event('signin', async ({ send }) => {
 
 ### Return the account-linking URL
 
+You should coordinate independently verified authentication results for account linking:
+
+1. Authenticate the user in the agent through the configured Microsoft Entra ID or OAuth connection.
+1. Create a short-lived, single-use session that binds the connected authentication request to the verified user and conversation.
+1. Open an app-hosted connected authentication dialog with the session identifier. Don’t place access tokens or ID tokens in the URL.
+1. Use NAA to authenticate the user’s Microsoft identity.
+1. Send the Microsoft token and linking-session identifier to the backend over HTTPS.
+1. Validate the Microsoft token and retrieve or verify the agent identity.
+1. Complete the path-specific operation:
+
+    - For Microsoft Entra ID authentication, verify that the identity used by the agent or bot corresponds to the Microsoft identity acquired for the tab.
+    - For OAuth authentication, associate the OAuth identity with the verified Microsoft identity.
+
+1. Persist only the association or application identity data required for future recognition.
+1. Consume and delete the temporary linking session and other transient authentication data.
+
+The backend must validate token signatures, issuers, audiences, tenants, expiration, nonces, and scopes as applicable. It must never infer that identities match solely from identifiers supplied by client code.
+
 Handle `signin.verify-state` to exchange the state code for the external-provider token. Create a short-lived linking session that binds the Teams channel and user to the account-linking request. Return the session-specific account-linking URL in the invoke response:
 
 The example uses an app-defined `createLinkingSession()` helper. The helper must generate a session ID, persist its association with the verified channel and user, set a short expiration, and allow the session to be consumed only once.
