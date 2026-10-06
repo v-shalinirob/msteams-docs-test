@@ -344,6 +344,7 @@ Test at least the following scenarios:
 | NAA doesn't use a prefetched token | Ensure that the client ID, broker redirect, scopes, and optional claims exactly match the runtime request. |
 | The identity provider rejects the callback | Register the exact HTTPS account-linking callback and its origin in the provider's application settings. |
 | The tab prompts again after successful linking | Verify that the secondary Microsoft identity is linked to the primary account and that the tab uses the NAA connection. |
+| Agent remains signed out after tab sign-in | This is expected behavior as tab authentication shouldn;t sign in the agent. |
 
 ## Design guidelines and best practices
 
@@ -359,6 +360,7 @@ Follow these guidelines when you design and deploy connected authentication:
 - **Plan for account recovery**: Provide secure account unlinking and recovery, and handle revoked consent without treating the conversational and tab capabilities as sharing one authentication session.
 - **Use production infrastructure**: Keep secrets in a managed secret store, rotate them regularly, and use a permanent app-owned HTTPS origin instead of a development tunnel.
 - **Complete security review**: Complete threat modeling, privacy review, consent review, and penetration testing before deployment.
+- **Keep the agent as the flow entry point**: Start connected authentication from the agent. Don’t treat a successful tab sign-in as proof that the agent is authenticated.
 
 > [!CAUTION]
 > The sample implementation used for the code snippets stores linking data in memory and includes a single-pending-session fallback for local testing. Don't use either approach in a concurrent or multi-user deployment.
