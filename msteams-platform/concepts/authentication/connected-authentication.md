@@ -15,7 +15,9 @@ Connected authentication provides one coordinated authentication experience for 
 
 ## User experience
 
-Connected authentication streamlines the authentication flows for an agent and an associated tab. Users sign in to the agent first with an OAuth provider or Microsoft Entra ID. For OAuth provider authentication, users can link that account to their Microsoft identity. For Microsoft Entra ID authentication, the app uses their Microsoft identity directly. After the connected authentication flow completes, the associated tab can authenticate the user through their active Microsoft session, reducing repeated sign-in prompts.
+To use the connected experience, the user starts sign-in from the agent first with Microsoft Entra ID or an OAuth provider. For Microsoft Entra ID authentication, the app uses their Microsoft identity directly. For OAuth provider authentication, users can link that account to their Microsoft identity.
+
+Opening or signing in to the tab first doesn’t establish authentication for the agent. After the connected authentication flow completes, the associated tab can authenticate the user through their active Microsoft session, reducing repeated sign-in prompts.
 
 [Placeholder: Screenshots of the connected authentication dialog.]
 
