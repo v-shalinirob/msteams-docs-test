@@ -8,7 +8,7 @@ ms.date: 09/22/2026
 
 # Connect agent and tab authentication
 
-Connected authentication provides one coordinated authentication experience for a Teams app that includes an agent and a tab.
+Connected authentication provides one coordinated authentication experience for a Teams app that includes an agent and a tab. For example, in a customer-support app, a representative signs in to an agent to find a case and then opens the associated case-management tab without signing in again. Connected authentication supports either a Microsoft Entra identity or an OAuth provider account linked to a Microsoft identity.
 
 > [!IMPORTANT]
 > Connected authentication is a one-way flow from the agent to the tab. Signing in to the agent can authenticate the associated tab after the connected authentication flow completes. Signing in to the tab doesn't sign the user in to the agent. Connected authentication supports AAD and OAuth scenarios.
