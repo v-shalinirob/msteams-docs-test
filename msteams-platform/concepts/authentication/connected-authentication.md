@@ -37,7 +37,7 @@ Connected authentication coordinates authentication between an agent and an asso
 - **Microsoft Entra ID authentication:** Both capabilities authenticate through Microsoft Entra ID. The application correlates the verified Microsoft identity across the agent and tab. A separate external-provider linking operation might not be necessary.
 - **OAuth provider authentication:** The agent authenticates the user through an OAuth provider, while the tab authenticates the user through Microsoft Entra ID. The application associates the provider-managed identity with the user’s Microsoft identity.
 
-In either path, connected authentication doesn’t merge authentication sessions or copy tokens between capabilities. The agent and tab acquire and use their own tokens for their respective resources. The application relies on verified identity information to determine that both authentication results represent the same user.
+In either path, connected authentication doesn’t merge authentication sessions or copy tokens between capabilities. The agent and tab acquire and use their own tokens for their respective resources. The application relies on verified identity information to determine that both authentication results represent the same user. After the agent authentication flow succeeds, the tab can authenticate the same user. Authentication initiated by the tab isn’t propagated back to the agent.
 
 The connected authentication flow works as follows for the OAuth scenario:
 
@@ -80,7 +80,7 @@ Connected authentication requires NAA so the associated tab, which is a single-p
 - For Microsoft Entra ID authentication, NAA allows the tab to authenticate the same Microsoft identity used by the agent.
 - For OAuth provider authentication, the app uses the Microsoft identity acquired through NAA when linking it to the OAuth identity.
 
-NAA doesn’t link identities or share the agent’s authentication session with the tab. The app remains responsible for validating and correlating the identities.
+NAA doesn’t link identities or share the agent’s authentication session with the tab. The app remains responsible for validating and correlating the identities. NAA provides Microsoft Entra authentication for the tab. It doesn’t authenticate the agent or use a tab authentication session for the agent.
 
 ### Configure the app manifest
 
@@ -333,6 +333,7 @@ Test at least the following scenarios:
 | Expired linking session | The backend rejects the request and asks the user to start sign-in again. |
 | Concurrent linking attempts | Each attempt remains bound to the correct user, conversation, and one-time correlation value. |
 | Revoked consent or Conditional Access | The app requests interaction and handles denial without exposing tokens. |
+| Tab sign-in before agent sign-in | The tab authentication should not allow for agent authentication for the user. |
 
 ### Troubleshoot connected authentication
 
