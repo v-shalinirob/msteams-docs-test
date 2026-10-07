@@ -122,12 +122,16 @@ Use app manifest version 1.22 or later to add `nestedAppAuthInfo`. The following
 
 ### Configure Teams SDK authentication
 
-Set the external provider's OAuth connection as the default connection for your agent:
+Configure the authentication connection used by the agent. The connection can use Microsoft Entra ID or another OAuth provider. Set the connection name to the exact name configured for the Azure Bot resource:
 
 ```typescript
 import { App, ExpressAdapter } from '@microsoft/teams.apps';
 
-const connectionName = process.env.CONNECTION_NAME || 'Auth0';
+const connectionName = process.env.CONNECTION_NAME;
+if (!connectionName) {
+  throw new Error('CONNECTION_NAME is not configured.');
+}
+
 const httpServerAdapter = new ExpressAdapter();
 
 const app = new App({
@@ -139,17 +143,17 @@ const app = new App({
 });
 ```
 
-- `connectionName`: Identifies the external OAuth connection. Set `CONNECTION_NAME` to the exact name of the OAuth connection configured for the Azure Bot resource; the example uses `Auth0` when the environment variable isn't set.
+- `connectionName`: Identifies the authentication connection configured for the Azure Bot resource. Set `CONNECTION_NAME` to the Microsoft Entra ID or OAuth provider connection used by the agent.
 - `applicationIdUri`: Identifies the protected agent resource. Set `RESOURCE_URI` to the application ID URI configured in Microsoft Entra ID.
-- `httpServerAdapter`: Connects the Teams SDK app to the web server. Create an `ExpressAdapter` instance so the app can receive activities and register the account-linking routes on the same server.
-- `oauth.defaultConnectionName`: Selects the connection used by `signin()` and token retrieval. Set it to `connectionName` so both operations use the same external identity provider.
+- `httpServerAdapter`: Connects the Teams SDK app to the web server so the app can receive activities and host the connected authentication routes.
+- `oauth.defaultConnectionName`: Selects the authentication connection used by `signin()` and token retrieval. The `oauth` property applies whether the configured connection uses Microsoft Entra ID or another OAuth provider.
 
 Start sign-in when the user sends a message and handle the successful sign-in event:
 
 ```typescript
 app.on('message', async ({ send, signin, isSignedIn }) => {
   if (!isSignedIn) {
-    await send(`Sign in with ${connectionName} to continue.`);
+    await send('Sign in to continue.');
     await signin();
     return;
   }
@@ -158,13 +162,17 @@ app.on('message', async ({ send, signin, isSignedIn }) => {
 });
 
 app.event('signin', async ({ send }) => {
-  await send('Sign-in succeeded. Complete account linking to use the tab.');
+  await send(
+    'Sign-in succeeded. Complete connected authentication to use the tab.'
+  );
 });
 ```
 
-- `isSignedIn`: Indicates whether the agent user authenticated. Use the value supplied by Teams SDK for the current activity to avoid starting another sign-in for an authenticated user.
-- `signin()`: Starts the configured external OAuth sign-in. Call it without a connection name to use `oauth.defaultConnectionName` and authenticate the primary account before account linking.
-- `app.event('signin', ...)`: Handles successful external-provider authentication. Register the event handler to notify the user that sign-in succeeded and account linking can continue.
+- `isSignedIn`: Indicates whether the user is authenticated through the configured connection. Check it before starting another sign-in.
+- `signin()`: Starts sign-in through `oauth.defaultConnectionName`. Depending on the configured connection, the user authenticates with Microsoft Entra ID or another OAuth provider.
+- `app.event('signin', ...)`: Handles successful authentication. Use the event to notify the user and continue the connected authentication flow. For an OAuth provider, the remaining flow can include account linking; for Microsoft Entra ID, the app verifies and correlates the Microsoft identity used by the agent and tab.
+
+This configuration authenticates the agent. NAA separately authenticates the associated tab. As described in [Nested app authentication](nested-authentication.md), initialize TeamsJS before MSAL in the tab and use `createNestablePublicClientApplication()` to acquire the tab's Microsoft Entra token.
 
 ### Return the account-linking URL
 
